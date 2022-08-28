@@ -10,7 +10,7 @@ function NavigationBar({isLoggedin}) {
     return (
         <Navbar bg="dark" variant="dark">
             <Container>
-                <Navbar.Brand href="/ballboys-offseason">Slowpoke Sports</Navbar.Brand>
+                <Navbar.Brand onClick={() => {navigate("/")}}>Slowpoke Sports</Navbar.Brand>
                 {
                     isLoggedin ?
                     <Nav className="me-auto">

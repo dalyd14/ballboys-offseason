@@ -20,7 +20,7 @@ function App({appState}) {
 
   //{isLoggedin ? <Navigate to="/submit-roster" /> : <Navigate to="/login" /> }
   return (
-    <Router basename={'/ballboys-offseason'}>
+    <Router>
       <NavigationBar isLoggedin={isLoggedin} />
       <Routes>
         <Route exact path="/" element={<SubmitRoster isLoggedin={isLoggedin} />} />
