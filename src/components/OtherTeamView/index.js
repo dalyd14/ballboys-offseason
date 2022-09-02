@@ -32,11 +32,12 @@ function OtherTeamView({ owners }) {
     ]
 
     if (Object.keys(currentOwner).length > 1 && !currentOwner["Can Submit"]) {
-        const newPlayers = currentOwner.players.filter(player => player.newContract != "none")
-        const cutPlayers = currentOwner.players.filter(player => player.newContract == "none")
+        const newPlayers = currentOwner.players.filter(player => (player.newContract && player.newContract != "none"))
+        const cutPlayers = currentOwner.players.filter(player => (!player.newContract || player.newContract == "none"))
         currentOwner.keptPlayers = newPlayers
         currentOwner.cutPlayers = cutPlayers
     }
+
 
     const donePlayerList = []
     if (currentOwner.special == "toDraft") {
