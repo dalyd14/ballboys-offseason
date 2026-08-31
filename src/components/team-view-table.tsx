@@ -1,4 +1,3 @@
-import Image from "next/image";
 import type { PlayerWithMove } from "@/lib/types";
 
 interface TeamViewTableProps {
@@ -14,76 +13,93 @@ export function TeamViewTable({
   teamName,
   rosterSubmitted,
 }: TeamViewTableProps) {
-  // If roster submitted, only show kept players (those with a contract).
   const shownPlayers = rosterSubmitted
     ? players.filter(
-        (p) => p.newContract != null && p.newContract !== 0,
+        (p) => (p.newContract != null && p.newContract !== 0) || p.toDraft,
       )
     : players;
+
+  const thClass = "px-4 py-3 text-left text-[11px] font-medium uppercase tracking-wider text-fg-subtle";
+  const tdClass = "px-4 py-3";
 
   return (
     <div>
       <div className="mb-6 flex items-baseline justify-between">
         <div>
-          <h1 className="text-2xl font-bold">{ownerName}&apos;s Team</h1>
-          <p className="text-gray-600">{teamName}</p>
+          <h1 className="text-xl font-semibold tracking-tight text-fg">
+            {ownerName}&apos;s Team
+          </h1>
+          <p className="mt-0.5 text-[14px] text-fg-muted">{teamName}</p>
         </div>
         <div>
           {rosterSubmitted ? (
-            <span className="rounded-md bg-green-100 px-3 py-1 text-sm font-medium text-green-700">
-              Roster Submitted ✔️
+            <span className="rounded-full border border-success/30 bg-success/10 px-3 py-1 text-[12px] font-medium text-success">
+              Roster Submitted ✓
             </span>
           ) : (
-            <span className="rounded-md bg-yellow-100 px-3 py-1 text-sm font-medium text-yellow-700">
-              Roster not submitted yet...
+            <span className="rounded-full border border-warning/30 bg-warning/10 px-3 py-1 text-[12px] font-medium text-warning">
+              Not submitted yet
             </span>
           )}
         </div>
       </div>
 
-      <div className="overflow-hidden rounded-lg bg-white shadow">
-        <table className="min-w-full divide-y divide-gray-200">
-          <thead className="bg-gray-50">
+      <div className="overflow-hidden rounded-xl border border-line bg-surface">
+        <table className="min-w-full divide-y divide-line">
+          <thead className="bg-elevated/50">
             <tr>
-              <th className="px-4 py-3 text-left text-xs font-medium uppercase text-gray-500"></th>
-              <th className="px-4 py-3 text-left text-xs font-medium uppercase text-gray-500">Player</th>
-              <th className="px-4 py-3 text-left text-xs font-medium uppercase text-gray-500">NFL Team</th>
-              <th className="px-4 py-3 text-left text-xs font-medium uppercase text-gray-500">Position</th>
+              <th className={thClass}></th>
+              <th className={thClass}>Player</th>
+              <th className={thClass}>NFL Team</th>
+              <th className={thClass}>Position</th>
               {rosterSubmitted ? (
                 <>
-                  <th className="px-4 py-3 text-center text-xs font-medium uppercase text-gray-500">Action</th>
-                  <th className="px-4 py-3 text-center text-xs font-medium uppercase text-gray-500">New Contract</th>
-                  <th className="px-4 py-3 text-center text-xs font-medium uppercase text-gray-500">Negotiation?</th>
+                  <th className={`${thClass} text-center`}>Action</th>
+                  <th className={`${thClass} text-center`}>New Contract</th>
+                  <th className={`${thClass} text-center`}>Negotiation?</th>
                 </>
               ) : (
                 <>
-                  <th className="px-4 py-3 text-center text-xs font-medium uppercase text-gray-500">Contract</th>
-                  <th className="px-4 py-3 text-center text-xs font-medium uppercase text-gray-500">Negotiation?</th>
+                  <th className={`${thClass} text-center`}>Contract</th>
+                  <th className={`${thClass} text-center`}>Negotiation?</th>
                 </>
               )}
             </tr>
           </thead>
-          <tbody className="divide-y divide-gray-200 bg-white">
+          <tbody className="divide-y divide-line">
             {shownPlayers.map((player) => (
-              <tr key={player.id} className="hover:bg-gray-50">
-                <td className="px-4 py-3">
+              <tr
+                key={player.id}
+                className={`transition-colors hover:bg-hover/50 ${
+                  player.toDraft ? "bg-danger/5" : ""
+                }`}
+              >
+                <td className={tdClass}>
                   {player.imageUrl && (
-                    <Image
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
                       src={player.imageUrl}
                       alt={player.playerName}
-                      width={70}
-                      height={70}
-                      className="rounded"
-                      unoptimized
+                      className={`h-12 w-12 rounded-lg object-cover ${
+                        player.toDraft ? "opacity-60" : ""
+                      }`}
                     />
                   )}
                 </td>
-                <td className="px-4 py-3 font-medium">{player.playerName}</td>
-                <td className="px-4 py-3 text-gray-600">{player.nflTeam}</td>
-                <td className="px-4 py-3 text-gray-600">{player.position}</td>
-                {rosterSubmitted ? (
+                <td className={`${tdClass} font-medium ${player.toDraft ? "text-fg-muted" : "text-fg"}`}>
+                  {player.playerName}
+                </td>
+                <td className={`${tdClass} text-fg-muted`}>{player.nflTeam}</td>
+                <td className={`${tdClass} text-fg-muted`}>{player.position}</td>
+                {player.toDraft ? (
+                  <td className={tdClass} colSpan={rosterSubmitted ? 3 : 2}>
+                    <span className="inline-block rounded-full border border-danger/30 bg-danger/10 px-3 py-1 text-[12px] font-medium text-danger">
+                      Going to Draft
+                    </span>
+                  </td>
+                ) : rosterSubmitted ? (
                   <>
-                    <td className="px-4 py-3 text-center font-medium">
+                    <td className={`${tdClass} text-center font-medium text-fg-muted`}>
                       {player.action === "nothing"
                         ? "Carry Over"
                         : player.action === "sign"
@@ -92,24 +108,32 @@ export function TeamViewTable({
                             ? "Renegotiated"
                             : player.action === "cut"
                               ? "Cut"
-                              : "-"}
+                              : "—"}
                     </td>
-                    <td className="px-4 py-3 text-center text-2xl font-bold">
+                    <td className={`${tdClass} text-center text-xl font-bold text-fg`}>
                       {player.newContract == null || player.newContract === 0
                         ? ""
                         : player.newContract}
                     </td>
-                    <td className="px-4 py-3 text-center text-2xl">
-                      {player.newNegotiationAvailable ? "✅" : "❌"}
+                    <td className={`${tdClass} text-center`}>
+                      {player.newNegotiationAvailable ? (
+                        <span className="text-success">✓</span>
+                      ) : (
+                        <span className="text-fg-subtle">—</span>
+                      )}
                     </td>
                   </>
                 ) : (
                   <>
-                    <td className="px-4 py-3 text-center text-2xl font-bold">
+                    <td className={`${tdClass} text-center text-xl font-bold text-fg`}>
                       {player.contractYears == null ? "" : player.contractYears}
                     </td>
-                    <td className="px-4 py-3 text-center text-2xl">
-                      {player.negotiationAvailable ? "✅" : "❌"}
+                    <td className={`${tdClass} text-center`}>
+                      {player.negotiationAvailable ? (
+                        <span className="text-success">✓</span>
+                      ) : (
+                        <span className="text-fg-subtle">—</span>
+                      )}
                     </td>
                   </>
                 )}
@@ -117,7 +141,7 @@ export function TeamViewTable({
             ))}
             {shownPlayers.length === 0 && (
               <tr>
-                <td colSpan={rosterSubmitted ? 7 : 6} className="px-4 py-8 text-center text-gray-500">
+                <td colSpan={rosterSubmitted ? 7 : 6} className="px-4 py-8 text-center text-[14px] text-fg-muted">
                   No players on this roster.
                 </td>
               </tr>

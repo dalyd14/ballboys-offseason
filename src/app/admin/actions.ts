@@ -1,7 +1,9 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { headers } from "next/headers";
 import { requireAdmin } from "@/lib/session";
+import { auth } from "@/lib/auth";
 import {
   createSeason,
   updateSeasonStatus,
@@ -13,7 +15,11 @@ import {
   setPlayerToDraft,
   updatePlayerOwner,
   importPlayers,
+  clearSeasonPlayers,
   logEvent,
+  updateOwnerProfile,
+  deleteOwner,
+  setOwnerRole,
 } from "@/lib/data";
 import { calculateCutPenalty } from "@/lib/offseason";
 import { parseEspnHtmlFull, type ParsedEspnTeam } from "@/lib/espn-parser";
@@ -272,6 +278,9 @@ export async function importEspnHtmlAction(
   const unmatchedTeams: string[] = [];
 
   try {
+    // Clear existing players for this season before re-importing.
+    await clearSeasonPlayers(seasonId);
+
     for (const team of teams) {
       const ownerId = teamLookup.get(team.teamName.toLowerCase());
       if (!ownerId) {
@@ -312,4 +321,112 @@ export async function importEspnHtmlAction(
       totalPlayers: totalImported,
     };
   }
+}
+
+// ---- Owner Account Management ----
+
+export async function createOwnerAction(
+  email: string,
+  password: string,
+  ownerName: string,
+  teamName: string,
+): Promise<{ error: string | null }> {
+  const adminUser = await requireAdmin();
+  try {
+    // Use Better Auth's admin API to create the user.
+    const res = await auth.api.createUser({
+      headers: await headers(),
+      body: {
+        email,
+        password,
+        name: ownerName,
+        // Additional fields are set after creation via direct DB update,
+        // since additionalFields with input:false can't be passed to createUser.
+      },
+    });
+
+    // Set the league-specific fields that have input:false.
+    const userId = res.user.id;
+    await updateOwnerProfile(userId, ownerName, teamName, email);
+
+    await logEvent(null, "owner_created", { email, ownerName, teamName }, adminUser.id, userId);
+  } catch (e) {
+    return { error: e instanceof Error ? e.message : "Failed to create owner" };
+  }
+  revalidatePath("/admin/owners");
+  return { error: null };
+}
+
+export async function updateOwnerProfileAction(
+  ownerId: string,
+  ownerName: string,
+  teamName: string,
+  email: string,
+): Promise<{ error: string | null }> {
+  const adminUser = await requireAdmin();
+  try {
+    await updateOwnerProfile(ownerId, ownerName, teamName, email);
+    await logEvent(null, "owner_profile_updated", { ownerName, teamName, email }, adminUser.id, ownerId);
+  } catch (e) {
+    return { error: e instanceof Error ? e.message : "Failed to update owner" };
+  }
+  revalidatePath("/admin/owners");
+  return { error: null };
+}
+
+export async function resetOwnerPasswordAction(
+  ownerId: string,
+  newPassword: string,
+): Promise<{ error: string | null }> {
+  const adminUser = await requireAdmin();
+  try {
+    // Get the user's email to use with the admin impersonation API.
+    const res = await auth.api.setUserPassword({
+      headers: await headers(),
+      body: {
+        userId: ownerId,
+        newPassword,
+      },
+    });
+    await logEvent(null, "owner_password_reset", { userId: ownerId }, adminUser.id, ownerId);
+  } catch (e) {
+    return { error: e instanceof Error ? e.message : "Failed to reset password" };
+  }
+  revalidatePath("/admin/owners");
+  return { error: null };
+}
+
+export async function deleteOwnerAction(
+  ownerId: string,
+): Promise<{ error: string | null }> {
+  const adminUser = await requireAdmin();
+  if (ownerId === adminUser.id) {
+    return { error: "You cannot delete your own account" };
+  }
+  try {
+    await deleteOwner(ownerId);
+    await logEvent(null, "owner_deleted", { ownerId }, adminUser.id, ownerId);
+  } catch (e) {
+    return { error: e instanceof Error ? e.message : "Failed to delete owner" };
+  }
+  revalidatePath("/admin/owners");
+  return { error: null };
+}
+
+export async function toggleOwnerRoleAction(
+  ownerId: string,
+  role: "user" | "admin",
+): Promise<{ error: string | null }> {
+  const adminUser = await requireAdmin();
+  if (ownerId === adminUser.id && role === "user") {
+    return { error: "You cannot remove your own admin role" };
+  }
+  try {
+    await setOwnerRole(ownerId, role);
+    await logEvent(null, "owner_role_changed", { role }, adminUser.id, ownerId);
+  } catch (e) {
+    return { error: e instanceof Error ? e.message : "Failed to update role" };
+  }
+  revalidatePath("/admin/owners");
+  return { error: null };
 }

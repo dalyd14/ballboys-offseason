@@ -11,34 +11,36 @@ export default async function SubmitRosterPage() {
 
   if (!season) {
     return (
-      <div className="mx-auto max-w-2xl px-4 py-16 text-center">
-        <h1 className="text-2xl font-bold">No active season</h1>
-        <p className="mt-2 text-gray-600">
+      <div className="mx-auto max-w-2xl px-6 py-20 text-center">
+        <h1 className="text-xl font-semibold text-fg">No active season</h1>
+        <p className="mt-2 text-[14px] text-fg-muted">
           The offseason hasn&apos;t been opened yet. Check back later.
         </p>
       </div>
     );
   }
 
-  // If already submitted or locked out, show the confirmation screen.
   if (owner.rosterSubmitted || !owner.canSubmit) {
     return (
-      <div className="mx-auto max-w-2xl px-4 py-16 text-center">
-        <h1 className="text-2xl font-bold">
+      <div className="mx-auto max-w-lg px-6 py-20 text-center">
+        <h1 className="text-xl font-semibold text-fg">
           {owner.rosterSubmitted
-            ? "It seems as though you already submitted your roster"
-            : "The offseason window is currently closed"}
+            ? "Roster Already Submitted"
+            : "Offseason Window Closed"}
         </h1>
-        <p className="mt-4 text-gray-600">You can view your team here:</p>
+        <p className="mt-3 text-[14px] text-fg-muted">
+          You can view your team here:
+        </p>
         <Link
           href="/my-team"
-          className="mt-4 inline-block rounded-md bg-blue-600 px-6 py-2 text-white font-medium hover:bg-blue-700"
+          className="mt-5 inline-block rounded-lg bg-accent px-6 py-2 text-[14px] font-medium text-white transition-colors hover:bg-accent-hover"
         >
           View Submitted Roster
         </Link>
+
         {owner.rosterSubmitted && owner.canSubmit && (
           <div className="mt-8">
-            <p className="text-gray-600">
+            <p className="text-[14px] text-fg-muted">
               If you did a crappy job, you can reset all changes to your roster
               and start from scratch:
             </p>
@@ -46,7 +48,7 @@ export default async function SubmitRosterPage() {
               <input type="hidden" name="seasonId" value={season.id} />
               <button
                 type="submit"
-                className="mt-4 rounded-md bg-red-600 px-6 py-2 text-white font-medium hover:bg-red-700"
+                className="mt-4 rounded-lg border border-danger/20 bg-danger/5 px-6 py-2 text-[14px] font-medium text-danger transition-colors hover:bg-danger/10"
               >
                 Reset Roster
               </button>
@@ -54,7 +56,7 @@ export default async function SubmitRosterPage() {
           </div>
         )}
         {owner.rosterSubmitted && !owner.canSubmit && (
-          <p className="mt-8 text-gray-600">
+          <p className="mt-8 text-[14px] text-fg-muted">
             Sorry if you did a crappy job, you are locked in now.
           </p>
         )}
@@ -65,7 +67,7 @@ export default async function SubmitRosterPage() {
   const players = await getPlayersByOwner(season.id, owner.id);
 
   return (
-    <div className="mx-auto max-w-6xl px-4 py-8">
+    <div className="mx-auto max-w-6xl px-6 py-8">
       <RosterSubmitTable
         players={players}
         availableYears={owner.availableYears}

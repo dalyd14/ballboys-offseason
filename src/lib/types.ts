@@ -119,4 +119,31 @@ export type AuditEventType =
   | "player_edited"
   | "roster_submitted"
   | "roster_reset"
-  | "exception_resolved";
+  | "exception_resolved"
+  | "owner_created"
+  | "owner_profile_updated"
+  | "owner_password_reset"
+  | "owner_deleted"
+  | "owner_role_changed";
+
+/** A player's transaction history entry across seasons. */
+export interface PlayerHistoryEntry {
+  id: string;
+  season_id: string;
+  owner_id: string | null;
+  player_name: string;
+  nfl_team: string;
+  position: string;
+  image_url: string | null;
+  contract_years: number | null;
+  negotiation_available: boolean;
+  to_draft: boolean;
+  cut_during_season: boolean;
+  contract_years_at_cut: number | null;
+  season_year: number;
+  owner_name: string | null;
+  move_action: string | null;
+  move_new_contract: number | null;
+  move_new_negotiation: boolean | null;
+  move_year_debit: number | null;
+}

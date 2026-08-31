@@ -1,0 +1,11 @@
+-- Drop all tables in dependency order, then re-run schema.sql
+DROP VIEW IF EXISTS v_players_to_draft;
+DROP TABLE IF EXISTS audit_log CASCADE;
+DROP TABLE IF EXISTS roster_move CASCADE;
+DROP TABLE IF EXISTS player CASCADE;
+DROP TABLE IF EXISTS season CASCADE;
+DROP TABLE IF EXISTS verification CASCADE;
+DROP TABLE IF EXISTS account CASCADE;
+DROP TABLE IF EXISTS session CASCADE;
+DROP TABLE IF EXISTS "user" CASCADE;
+DROP FUNCTION IF EXISTS update_updated_at() CASCADE;

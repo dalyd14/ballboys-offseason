@@ -8,6 +8,7 @@ import type {
   PlayerWithMove,
   ParsedEspnPlayer,
   AuditEventType,
+  PlayerHistoryEntry,
 } from "@/lib/types";
 
 /**
@@ -23,6 +24,30 @@ import type {
  * ============================================================
  */
 
+/**
+ * Convert a snake_case string to camelCase.
+ */
+function snakeToCamel(s: string): string {
+  return s.replace(/_([a-z])/g, (_, c) => c.toUpperCase());
+}
+
+/**
+ * Map a row's snake_case keys to camelCase.
+ * The `user` table already uses camelCase columns, so this is
+ * only needed for season/player/roster_move/audit_log rows.
+ */
+function mapRow<T>(row: Record<string, unknown>): T {
+  const out: Record<string, unknown> = {};
+  for (const key of Object.keys(row)) {
+    out[snakeToCamel(key)] = row[key];
+  }
+  return out as T;
+}
+
+function mapRows<T>(rows: Record<string, unknown>[]): T[] {
+  return rows.map((r) => mapRow<T>(r));
+}
+
 // ---- Seasons ----
 
 export async function getActiveSeason(): Promise<Season | null> {
@@ -32,19 +57,19 @@ export async function getActiveSeason(): Promise<Season | null> {
     WHERE status IN ('setup', 'open', 'locked')
     ORDER BY year DESC LIMIT 1
   `;
-  return (rows[0] as unknown as Season) ?? null;
+  return (rows[0] ? mapRow<Season>(rows[0]) : null);
 }
 
 export async function getSeasons(): Promise<Season[]> {
   const sql = getSql();
   const rows = await sql`SELECT * FROM "season" ORDER BY year DESC`;
-  return rows as unknown as Season[];
+  return mapRows<Season>(rows);
 }
 
 export async function getSeasonById(id: string): Promise<Season | null> {
   const sql = getSql();
   const rows = await sql`SELECT * FROM "season" WHERE id = ${id}`;
-  return (rows[0] as unknown as Season) ?? null;
+  return (rows[0] ? mapRow<Season>(rows[0]) : null);
 }
 
 export async function createSeason(
@@ -58,7 +83,18 @@ export async function createSeason(
     VALUES (${randomUUID()}, ${year}, ${baseCapYears}, ${baseNegotiations})
     RETURNING *
   `;
-  return rows[0] as unknown as Season;
+  const season = mapRow<Season>(rows[0]);
+
+  // Initialize all owners' budgets to the season base values.
+  await sql`
+    UPDATE "user"
+    SET "availableYears" = ${baseCapYears},
+        "availableNegotiations" = ${baseNegotiations},
+        "rosterSubmitted" = false,
+        "canSubmit" = false
+  `;
+
+  return season;
 }
 
 export async function updateSeasonStatus(
@@ -74,7 +110,7 @@ export async function updateSeasonStatus(
 export async function getOwners(): Promise<Owner[]> {
   const sql = getSql();
   const rows = await sql`
-    SELECT * FROM "user" WHERE role = 'user' ORDER BY "ownerName"
+    SELECT * FROM "user" ORDER BY "ownerName"
   `;
   return rows as unknown as Owner[];
 }
@@ -121,6 +157,32 @@ export async function setRosterSubmitted(
   await sql`UPDATE "user" SET "rosterSubmitted" = ${submitted} WHERE id = ${ownerId}`;
 }
 
+export async function updateOwnerProfile(
+  id: string,
+  ownerName: string,
+  teamName: string,
+  email: string,
+): Promise<void> {
+  const sql = getSql();
+  await sql`
+    UPDATE "user"
+    SET "ownerName" = ${ownerName},
+        "teamName" = ${teamName},
+        email = ${email}
+    WHERE id = ${id}
+  `;
+}
+
+export async function deleteOwner(id: string): Promise<void> {
+  const sql = getSql();
+  await sql`DELETE FROM "user" WHERE id = ${id}`;
+}
+
+export async function setOwnerRole(id: string, role: "user" | "admin"): Promise<void> {
+  const sql = getSql();
+  await sql`UPDATE "user" SET role = ${role} WHERE id = ${id}`;
+}
+
 // ---- Players ----
 
 export async function getPlayersByOwner(
@@ -133,7 +195,7 @@ export async function getPlayersByOwner(
     WHERE season_id = ${seasonId} AND owner_id = ${ownerId}
     ORDER BY position, player_name
   `;
-  return rows as unknown as Player[];
+  return mapRows<Player>(rows);
 }
 
 export async function getPlayersBySeason(
@@ -145,7 +207,7 @@ export async function getPlayersBySeason(
     WHERE season_id = ${seasonId}
     ORDER BY owner_id, position, player_name
   `;
-  return rows as unknown as Player[];
+  return mapRows<Player>(rows);
 }
 
 export async function getPlayersToDraft(
@@ -157,13 +219,74 @@ export async function getPlayersToDraft(
     WHERE season_id = ${seasonId} AND to_draft = true
     ORDER BY player_name
   `;
-  return rows as unknown as Player[];
+  return mapRows<Player>(rows);
 }
 
 export async function getPlayerById(id: string): Promise<Player | null> {
   const sql = getSql();
   const rows = await sql`SELECT * FROM "player" WHERE id = ${id}`;
-  return (rows[0] as unknown as Player) ?? null;
+  return (rows[0] ? mapRow<Player>(rows[0]) : null);
+}
+
+/**
+ * Get a player's transaction history across all seasons.
+ * Matches by espn_player_id (preferred) or player_name.
+ * Returns seasons joined with the player row and any roster move.
+ */
+export async function getPlayerHistory(
+  playerId: string,
+): Promise<PlayerHistoryEntry[]> {
+  const sql = getSql();
+
+  // First get the player to find their espn_player_id and name.
+  const playerRows = await sql`
+    SELECT espn_player_id, player_name FROM "player" WHERE id = ${playerId}
+  `;
+  if (!playerRows[0]) return [];
+
+  const espnId = playerRows[0].espn_player_id;
+  const name = playerRows[0].player_name;
+
+  // Match by espn_player_id if available, otherwise by name.
+  const rows = espnId
+    ? await sql`
+        SELECT
+          p.id, p.season_id, p.owner_id, p.player_name, p.nfl_team,
+          p.position, p.image_url, p.contract_years, p.negotiation_available,
+          p.to_draft, p.cut_during_season, p.contract_years_at_cut,
+          s.year AS season_year,
+          u."ownerName" AS owner_name,
+          rm.action AS move_action,
+          rm.new_contract AS move_new_contract,
+          rm.new_negotiation_available AS move_new_negotiation,
+          rm.year_debit AS move_year_debit
+        FROM "player" p
+        JOIN "season" s ON p.season_id = s.id
+        LEFT JOIN "user" u ON p.owner_id = u.id
+        LEFT JOIN "roster_move" rm ON rm.player_id = p.id AND rm.season_id = p.season_id
+        WHERE p.espn_player_id = ${espnId}
+        ORDER BY s.year DESC
+      `
+    : await sql`
+        SELECT
+          p.id, p.season_id, p.owner_id, p.player_name, p.nfl_team,
+          p.position, p.image_url, p.contract_years, p.negotiation_available,
+          p.to_draft, p.cut_during_season, p.contract_years_at_cut,
+          s.year AS season_year,
+          u."ownerName" AS owner_name,
+          rm.action AS move_action,
+          rm.new_contract AS move_new_contract,
+          rm.new_negotiation_available AS move_new_negotiation,
+          rm.year_debit AS move_year_debit
+        FROM "player" p
+        JOIN "season" s ON p.season_id = s.id
+        LEFT JOIN "user" u ON p.owner_id = u.id
+        LEFT JOIN "roster_move" rm ON rm.player_id = p.id AND rm.season_id = p.season_id
+        WHERE p.player_name = ${name}
+        ORDER BY s.year DESC
+      `;
+
+  return rows as unknown as PlayerHistoryEntry[];
 }
 
 export async function updatePlayerContract(
@@ -199,7 +322,9 @@ export async function setPlayerToDraft(
 ): Promise<void> {
   const sql = getSql();
   if (toDraft) {
-    // Reset contract & negotiation when sending to draft pool.
+    // Mark player as heading to draft pool, but keep owner_id so the
+    // owner can see the player on their roster as "Going to Draft".
+    // Contract & negotiation are reset so the player is clean for the draft.
     await sql`
       UPDATE "player"
       SET to_draft = true,
@@ -221,6 +346,8 @@ export async function setPlayerToDraft(
  */
 export async function rolloverSeason(seasonId: string): Promise<number> {
   const sql = getSql();
+
+  // 1. Decrement all positive contract years by 1.
   const rows = await sql`
     UPDATE "player"
     SET contract_years = contract_years - 1
@@ -229,7 +356,35 @@ export async function rolloverSeason(seasonId: string): Promise<number> {
       AND contract_years > 0
     RETURNING id
   `;
+
+  // 2. Send players with 0 contract years and no negotiation to the draft pool.
+  await sql`
+    UPDATE "player"
+    SET to_draft = true,
+        contract_years = null,
+        negotiation_available = true
+    WHERE season_id = ${seasonId}
+      AND contract_years = 0
+      AND negotiation_available = false
+  `;
+
+  // 3. Mark the season's rollover as complete.
+  await sql`
+    UPDATE "season"
+    SET rollover_completed = true
+    WHERE id = ${seasonId}
+  `;
+
   return rows.length;
+}
+
+/**
+ * Remove all players for a season (used before re-importing).
+ * Also cascades to roster_moves via FK.
+ */
+export async function clearSeasonPlayers(seasonId: string): Promise<void> {
+  const sql = getSql();
+  await sql`DELETE FROM "player" WHERE season_id = ${seasonId}`;
 }
 
 /**
@@ -283,7 +438,7 @@ export async function getRosterMovesByOwner(
     SELECT * FROM "roster_move"
     WHERE season_id = ${seasonId} AND owner_id = ${ownerId}
   `;
-  return rows as unknown as RosterMove[];
+  return mapRows<RosterMove>(rows);
 }
 
 /**
@@ -305,9 +460,9 @@ export async function getPlayersWithMoves(
     LEFT JOIN "roster_move" rm
       ON rm.player_id = p.id AND rm.season_id = p.season_id
     WHERE p.season_id = ${seasonId} AND p.owner_id = ${ownerId}
-    ORDER BY p.position, p.player_name
+    ORDER BY p.to_draft DESC, p.position, p.player_name
   `;
-  return rows as unknown as PlayerWithMove[];
+  return mapRows<PlayerWithMove>(rows);
 }
 
 export async function getRosterMovesBySeason(
@@ -317,7 +472,7 @@ export async function getRosterMovesBySeason(
   const rows = await sql`
     SELECT * FROM "roster_move" WHERE season_id = ${seasonId}
   `;
-  return rows as unknown as RosterMove[];
+  return mapRows<RosterMove>(rows);
 }
 
 /**
@@ -397,13 +552,13 @@ export async function logEvent(
 
 interface AuditLogEntry {
   id: string;
-  season_id: string | null;
-  event_type: string;
+  seasonId: string | null;
+  eventType: string;
   details: unknown;
-  actor_id: string | null;
-  owner_id: string | null;
-  player_id: string | null;
-  created_at: Date;
+  actorId: string | null;
+  ownerId: string | null;
+  playerId: string | null;
+  createdAt: Date;
 }
 
 export async function getAuditLog(
@@ -417,5 +572,5 @@ export async function getAuditLog(
     ORDER BY created_at DESC
     LIMIT ${limit}
   `;
-  return rows as unknown as AuditLogEntry[];
+  return mapRows<AuditLogEntry>(rows);
 }

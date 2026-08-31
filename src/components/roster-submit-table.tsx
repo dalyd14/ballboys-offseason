@@ -36,7 +36,6 @@ export function RosterSubmitTable({
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
 
-  // Track renegotiations used (for the counter display + validation).
   const negotiationsUsed = useMemo(() => {
     let count = 0;
     for (const [, move] of moves) {
@@ -49,10 +48,10 @@ export function RosterSubmitTable({
 
   const negotiationsRemaining = availableNegotiations - negotiationsUsed;
 
-  // Calculate the total years spent so far (for the cap counter).
   const yearsSpent = useMemo(() => {
     let total = 0;
     for (const player of initialPlayers) {
+      if (player.toDraft) continue;
       const move = moves.get(player.id);
       if (!move || move.action === "nothing") {
         total += player.contractYears ?? 0;
@@ -61,13 +60,13 @@ export function RosterSubmitTable({
           player,
           move.action,
           move.years,
-          negotiationsRemaining,
+          999,
         );
         total += result.yearDebit;
       }
     }
     return total;
-  }, [initialPlayers, moves, negotiationsRemaining]);
+  }, [initialPlayers, moves]);
 
   const yearsRemaining = availableYears - yearsSpent;
   const capPercent = (yearsRemaining / availableYears) * 100;
@@ -98,7 +97,6 @@ export function RosterSubmitTable({
     setError(null);
     setSubmitting(true);
 
-    // Build the moves map for validation.
     const movesMap = new Map<string, { action: PlayerAction; years: number | "nothing" }>();
     for (const [pid, m] of moves) {
       movesMap.set(pid, { action: m.action, years: m.years });
@@ -117,7 +115,6 @@ export function RosterSubmitTable({
       return;
     }
 
-    // Build the submission payload.
     const submissionMoves: {
       playerId: string;
       action: PlayerAction;
@@ -127,11 +124,14 @@ export function RosterSubmitTable({
     }[] = [];
 
     for (const player of initialPlayers) {
+      // Skip players already marked as going to draft — no action needed.
+      if (player.toDraft) continue;
+
       const move = moves.get(player.id);
       const action = move?.action ?? "nothing";
       const years = move?.years ?? "nothing";
 
-      const result = computeMove(player, action, years, negotiationsRemaining);
+      const result = computeMove(player, action, years, 999);
 
       submissionMoves.push({
         playerId: player.id,
@@ -154,10 +154,10 @@ export function RosterSubmitTable({
 
   if (success) {
     return (
-      <div className="mx-auto max-w-2xl py-16 text-center">
-        <div className="rounded-lg bg-green-50 border border-green-200 p-8">
-          <h2 className="text-2xl font-bold text-green-700">You are all set!</h2>
-          <p className="mt-2 text-green-600">
+      <div className="mx-auto max-w-lg py-20 text-center">
+        <div className="rounded-xl border border-success/20 bg-success/5 p-8">
+          <h2 className="text-xl font-semibold text-success">You are all set!</h2>
+          <p className="mt-2 text-[14px] text-success/80">
             Your roster was submitted. Redirecting to your team...
           </p>
         </div>
@@ -165,50 +165,54 @@ export function RosterSubmitTable({
     );
   }
 
+  const thClass = "px-3 py-3 text-left text-[11px] font-medium uppercase tracking-wider text-fg-subtle";
+  const tdClass = "px-3 py-3";
+  const selectClass = "w-full rounded-lg border border-line bg-elevated px-2 py-1.5 text-[13px] text-fg focus:border-accent focus:outline-none";
+
   return (
     <div>
       {error && (
-        <div className="mb-4 rounded-md bg-red-50 border border-red-200 p-4">
-          <p className="font-bold text-red-700">Dave Sucks!</p>
-          <p className="mt-1 whitespace-pre-line text-sm text-red-600">{error}</p>
+        <div className="mb-4 rounded-lg border border-danger/20 bg-danger/5 px-4 py-3">
+          <p className="font-medium text-danger">Dave Sucks!</p>
+          <p className="mt-1 whitespace-pre-line text-[13px] text-danger/80">{error}</p>
         </div>
       )}
 
       {/* Cap & Negotiations Counter */}
-      <div className="mb-6 flex flex-wrap items-center gap-6 rounded-lg bg-white p-4 shadow">
+      <div className="mb-6 flex flex-wrap items-center gap-6 rounded-xl border border-line bg-surface p-5">
         <div>
-          <h2 className="text-2xl font-bold">
-            {yearsRemaining} Years Left
+          <h2 className="text-2xl font-semibold text-fg">
+            {yearsRemaining} <span className="text-[16px] font-normal text-fg-muted">Years Left</span>
           </h2>
-          <div className="mt-2 h-2 w-48 overflow-hidden rounded-full bg-gray-200">
+          <div className="mt-2 h-1.5 w-48 overflow-hidden rounded-full bg-elevated">
             <div
-              className={`h-full transition-all ${
+              className={`h-full rounded-full transition-all ${
                 capPercent < 30
-                  ? "bg-red-500"
+                  ? "bg-danger"
                   : capPercent < 60
-                    ? "bg-yellow-500"
-                    : "bg-green-500"
+                    ? "bg-warning"
+                    : "bg-success"
               }`}
               style={{ width: `${Math.max(0, capPercent)}%` }}
             />
           </div>
         </div>
         <div>
-          <h2 className="text-2xl font-bold">
-            {negotiationsRemaining} Negotiation{negotiationsRemaining === 1 ? "" : "s"} Left
+          <h2 className="text-2xl font-semibold text-fg">
+            {negotiationsRemaining} <span className="text-[16px] font-normal text-fg-muted">Negotiation{negotiationsRemaining === 1 ? "" : "s"} Left</span>
           </h2>
         </div>
         <div className="ml-auto flex gap-2">
           <button
             onClick={handleSubmit}
             disabled={submitting}
-            className="rounded-md bg-green-600 px-6 py-2 text-white font-medium hover:bg-green-700 disabled:opacity-50"
+            className="rounded-lg bg-accent px-6 py-2 text-[13px] font-medium text-white transition-colors hover:bg-accent-hover disabled:opacity-40"
           >
             {submitting ? "Submitting..." : "Submit"}
           </button>
           <button
             onClick={handleReset}
-            className="rounded-md bg-red-600 px-4 py-2 text-white font-medium hover:bg-red-700"
+            className="rounded-lg border border-danger/20 bg-danger/5 px-4 py-2 text-[13px] font-medium text-danger transition-colors hover:bg-danger/10"
           >
             Reset
           </button>
@@ -216,22 +220,22 @@ export function RosterSubmitTable({
       </div>
 
       {/* Roster Table */}
-      <div className="overflow-x-auto rounded-lg bg-white shadow">
-        <table className="min-w-full divide-y divide-gray-200">
-          <thead className="bg-gray-50">
+      <div className="overflow-x-auto rounded-xl border border-line bg-surface">
+        <table className="min-w-full divide-y divide-line">
+          <thead className="bg-elevated/50">
             <tr>
-              <th className="px-3 py-3"></th>
-              <th className="px-3 py-3 text-left text-xs font-medium uppercase text-gray-500">Player</th>
-              <th className="px-3 py-3 text-left text-xs font-medium uppercase text-gray-500">NFL Team</th>
-              <th className="px-3 py-3 text-left text-xs font-medium uppercase text-gray-500">Position</th>
-              <th className="px-3 py-3 text-center text-xs font-medium uppercase text-gray-500">Contract</th>
-              <th className="px-3 py-3 text-center text-xs font-medium uppercase text-gray-500">Negotiation?</th>
-              <th className="px-3 py-3 text-center text-xs font-medium uppercase text-gray-500">Action</th>
-              <th className="px-3 py-3 text-center text-xs font-medium uppercase text-gray-500">Years</th>
-              <th className="px-3 py-3 text-center text-xs font-medium uppercase text-gray-500">Final Contract</th>
+              <th className={thClass}></th>
+              <th className={thClass}>Player</th>
+              <th className={thClass}>NFL Team</th>
+              <th className={thClass}>Position</th>
+              <th className={`${thClass} text-center`}>Contract</th>
+              <th className={`${thClass} text-center`}>Negotiation?</th>
+              <th className={`${thClass} text-center`}>Action</th>
+              <th className={`${thClass} text-center`}>Years</th>
+              <th className={`${thClass} text-center`}>Final Contract</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-gray-200 bg-white">
+          <tbody className="divide-y divide-line">
             {initialPlayers.map((player) => {
               const move = moves.get(player.id);
               const action = move?.action ?? "nothing";
@@ -244,7 +248,7 @@ export function RosterSubmitTable({
                 initialPlayers,
                 moves,
               );
-              const result = computeMove(player, action, years, negotiationsRemaining);
+              const result = computeMove(player, action, years, 999);
               const finalContract =
                 result.newContract == null
                   ? player.contractYears ?? ""
@@ -252,36 +256,71 @@ export function RosterSubmitTable({
                     ? ""
                     : result.newContract;
 
+              if (player.toDraft) {
+                return (
+                  <tr key={player.id} className="bg-danger/5 transition-colors hover:bg-danger/10">
+                    <td className={tdClass}>
+                      {player.imageUrl && (
+                        <Image
+                          src={player.imageUrl}
+                          alt={player.playerName}
+                          width={48}
+                          height={48}
+                          className="rounded-lg opacity-60"
+                          unoptimized
+                        />
+                      )}
+                    </td>
+                    <td className={`${tdClass} font-medium text-fg-muted`}>{player.playerName}</td>
+                    <td className={`${tdClass} text-fg-muted`}>{player.nflTeam}</td>
+                    <td className={`${tdClass} text-fg-muted`}>{player.position}</td>
+                    <td className={`${tdClass} text-center text-fg-subtle`}>—</td>
+                    <td className={`${tdClass} text-center`}>
+                      <span className="text-fg-subtle">—</span>
+                    </td>
+                    <td className={tdClass} colSpan={3}>
+                      <span className="inline-block rounded-full border border-danger/30 bg-danger/10 px-3 py-1 text-[12px] font-medium text-danger">
+                        Going to Draft
+                      </span>
+                    </td>
+                  </tr>
+                );
+              }
+
               return (
-                <tr key={player.id} className="hover:bg-gray-50">
-                  <td className="px-3 py-3">
+                <tr key={player.id} className="transition-colors hover:bg-hover/50">
+                  <td className={tdClass}>
                     {player.imageUrl && (
                       <Image
                         src={player.imageUrl}
                         alt={player.playerName}
-                        width={100}
-                        height={100}
-                        className="rounded"
+                        width={48}
+                        height={48}
+                        className="rounded-lg"
                         unoptimized
                       />
                     )}
                   </td>
-                  <td className="px-3 py-3 font-medium">{player.playerName}</td>
-                  <td className="px-3 py-3 text-gray-600">{player.nflTeam}</td>
-                  <td className="px-3 py-3 text-gray-600">{player.position}</td>
-                  <td className="px-3 py-3 text-center text-2xl font-bold">
+                  <td className={`${tdClass} font-medium text-fg`}>{player.playerName}</td>
+                  <td className={`${tdClass} text-fg-muted`}>{player.nflTeam}</td>
+                  <td className={`${tdClass} text-fg-muted`}>{player.position}</td>
+                  <td className={`${tdClass} text-center text-xl font-bold text-fg`}>
                     {player.contractYears == null ? "" : player.contractYears}
                   </td>
-                  <td className="px-3 py-3 text-center text-2xl">
-                    {player.negotiationAvailable ? "✅" : "❌"}
+                  <td className={`${tdClass} text-center`}>
+                    {player.negotiationAvailable ? (
+                      <span className="text-success">✓</span>
+                    ) : (
+                      <span className="text-fg-subtle">—</span>
+                    )}
                   </td>
-                  <td className="px-3 py-3">
+                  <td className={tdClass}>
                     <select
                       value={action}
                       onChange={(e) =>
                         handleActionChange(player.id, e.target.value as PlayerAction)
                       }
-                      className="w-full rounded-md border border-gray-300 px-2 py-1.5 text-sm"
+                      className={selectClass}
                     >
                       {availableActions.map((a) => (
                         <option key={a} value={a}>
@@ -296,7 +335,7 @@ export function RosterSubmitTable({
                       ))}
                     </select>
                   </td>
-                  <td className="px-3 py-3">
+                  <td className={tdClass}>
                     {action !== "nothing" && action !== "cut" ? (
                       <select
                         value={years === "nothing" ? "" : String(years)}
@@ -306,7 +345,7 @@ export function RosterSubmitTable({
                             e.target.value === "" ? "nothing" : parseInt(e.target.value),
                           )
                         }
-                        className="w-full rounded-md border border-gray-300 px-2 py-1.5 text-sm"
+                        className={selectClass}
                       >
                         <option value=""></option>
                         {yearOptions.map((y) => (
@@ -316,10 +355,10 @@ export function RosterSubmitTable({
                         ))}
                       </select>
                     ) : (
-                      <span className="text-gray-400">—</span>
+                      <span className="text-fg-subtle">—</span>
                     )}
                   </td>
-                  <td className="px-3 py-3 text-center text-2xl font-bold">
+                  <td className={`${tdClass} text-center text-xl font-bold text-fg`}>
                     {finalContract}
                   </td>
                 </tr>

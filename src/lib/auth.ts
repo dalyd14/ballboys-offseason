@@ -1,5 +1,6 @@
 import { betterAuth } from "better-auth";
 import { nextCookies } from "better-auth/next-js";
+import { admin } from "better-auth/plugins";
 import { Pool } from "@neondatabase/serverless";
 
 /**
@@ -17,6 +18,7 @@ export const auth = betterAuth({
   secret: process.env.BETTER_AUTH_SECRET,
   emailAndPassword: {
     enabled: true,
+    minPasswordLength: 6,
   },
   user: {
     // League-specific fields stored on the auth user row.
@@ -69,6 +71,8 @@ export const auth = betterAuth({
       },
     },
   },
-  // Enables cookie setting from Server Actions in Next.js
-  plugins: [nextCookies()],
+  plugins: [
+    nextCookies(),
+    admin(),
+  ],
 });

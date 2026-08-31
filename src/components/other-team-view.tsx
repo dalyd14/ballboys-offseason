@@ -2,10 +2,10 @@
 
 import Image from "next/image";
 import { useState } from "react";
-import type { Player, Owner } from "@/lib/types";
+import type { Player, Owner, PlayerWithMove } from "@/lib/types";
 
 interface OtherTeamViewProps {
-  ownersWithPlayers: { owner: Owner; players: Player[] }[];
+  ownersWithPlayers: { owner: Owner; players: PlayerWithMove[] }[];
   draftPlayers: Player[];
   currentOwnerId: string;
 }
@@ -28,53 +28,52 @@ export function OtherTeamView({
       : null;
 
   return (
-    <div className="flex flex-row gap-4" style={{ minHeight: "70vh" }}>
+    <div className="flex flex-row gap-6" style={{ minHeight: "70vh" }}>
       {/* Left sidebar: team list */}
-      <div className="w-64 shrink-0 space-y-2">
+      <div className="w-60 shrink-0 space-y-1">
         {ownersWithPlayers.map(({ owner, players }) => (
           <button
             key={owner.id}
             onClick={() => setView({ type: "owner", ownerId: owner.id })}
-            className={`flex w-full items-center justify-between rounded-md px-4 py-3 text-left transition ${
+            className={`flex w-full items-center justify-between rounded-lg px-3 py-2.5 text-left text-[13px] transition-colors ${
               view.type === "owner" && view.ownerId === owner.id
-                ? "bg-blue-600 text-white"
-                : "bg-white text-gray-700 hover:bg-gray-100"
+                ? "bg-accent text-white"
+                : "text-fg-muted hover:bg-hover hover:text-fg"
             }`}
           >
             <span className="font-medium">
               {owner.ownerName ?? owner.name}
             </span>
-            <span>
-              {!owner.canSubmit ? "✔️" : null}
+            <span className="text-[12px] opacity-70">
+              {!owner.canSubmit ? "✓" : null}
               {owner.id === currentOwnerId ? " (You)" : null}
             </span>
           </button>
         ))}
-        <button
-          onClick={() => setView({ type: "draft" })}
-          className={`flex w-full items-center justify-between rounded-md px-4 py-3 text-left transition ${
-            view.type === "draft"
-              ? "bg-blue-600 text-white"
-              : "bg-white text-gray-700 hover:bg-gray-100"
-          }`}
-        >
-          <span className="font-medium">Players to the Draft</span>
-          <span>❌</span>
-        </button>
+        <div className="pt-2">
+          <button
+            onClick={() => setView({ type: "draft" })}
+            className={`flex w-full items-center justify-between rounded-lg px-3 py-2.5 text-left text-[13px] transition-colors ${
+              view.type === "draft"
+                ? "bg-accent text-white"
+                : "text-fg-muted hover:bg-hover hover:text-fg"
+            }`}
+          >
+            <span className="font-medium">Players to the Draft</span>
+            <span className="text-[12px] opacity-70">✕</span>
+          </button>
+        </div>
       </div>
 
       {/* Right content area */}
       <div className="flex-1 overflow-auto">
         {selectedOwner ? (
-          <OwnerDetail
-            owner={selectedOwner.owner}
-            players={selectedOwner.players}
-          />
+          <OwnerDetail owner={selectedOwner.owner} players={selectedOwner.players} />
         ) : view.type === "draft" ? (
           <DraftView players={draftPlayers} ownersWithPlayers={ownersWithPlayers} />
         ) : (
-          <div className="flex h-full items-center justify-center text-gray-400">
-            <p className="text-lg">👈 Select a team from the list</p>
+          <div className="flex h-full items-center justify-center text-fg-subtle">
+            <p className="text-[15px]">Select a team from the list</p>
           </div>
         )}
       </div>
@@ -82,33 +81,34 @@ export function OtherTeamView({
   );
 }
 
-function OwnerDetail({ owner, players }: { owner: Owner; players: Player[] }) {
+function OwnerDetail({ owner, players }: { owner: Owner; players: PlayerWithMove[] }) {
   const submitted = !owner.canSubmit;
 
-  // If submitted, split into kept and cut players.
   const keptPlayers = submitted
-    ? players.filter((p) => p.toDraft === false)
+    ? players.filter(
+        (p) => !p.toDraft && p.action !== "cut" && p.newContract != null && p.newContract !== 0,
+      )
     : players;
   const cutPlayers = submitted
-    ? players.filter((p) => p.toDraft === true)
+    ? players.filter((p) => p.toDraft || p.action === "cut")
     : [];
 
   return (
     <div>
       <div className="mb-6 flex items-baseline justify-between">
         <div>
-          <h2 className="text-2xl font-bold">
+          <h2 className="text-xl font-semibold tracking-tight text-fg">
             {owner.ownerName ?? owner.name}&apos;s Team
           </h2>
-          <p className="text-gray-600">{owner.teamName}</p>
+          <p className="mt-0.5 text-[14px] text-fg-muted">{owner.teamName}</p>
         </div>
         <div>
           {submitted ? (
-            <span className="rounded-md bg-green-100 px-3 py-1 text-sm font-medium text-green-700">
-              Roster Submitted ✔️
+            <span className="rounded-full border border-success/30 bg-success/10 px-3 py-1 text-[12px] font-medium text-success">
+              Roster Submitted ✓
             </span>
           ) : (
-            <div className="text-right text-sm text-gray-600">
+            <div className="text-right text-[13px] text-fg-muted">
               <p>{owner.availableYears} years this offseason</p>
               <p>
                 {owner.availableNegotiations} negotiation
@@ -120,7 +120,7 @@ function OwnerDetail({ owner, players }: { owner: Owner; players: Player[] }) {
       </div>
 
       {submitted && (
-        <p className="mb-4 text-center text-gray-600">
+        <p className="mb-4 text-center text-[13px] text-fg-muted">
           The following {keptPlayers.length} players were kept by{" "}
           {owner.ownerName ?? owner.name}
         </p>
@@ -130,7 +130,7 @@ function OwnerDetail({ owner, players }: { owner: Owner; players: Player[] }) {
 
       {submitted && cutPlayers.length > 0 && (
         <div className="mt-8">
-          <p className="mb-4 text-center text-gray-600">
+          <p className="mb-4 text-center text-[13px] text-fg-muted">
             The following players were not kept on{" "}
             {owner.ownerName ?? owner.name}&apos;s team. They will be available
             in the draft.
@@ -147,66 +147,69 @@ function DraftView({
   ownersWithPlayers,
 }: {
   players: Player[];
-  ownersWithPlayers: { owner: Owner; players: Player[] }[];
+  ownersWithPlayers: { owner: Owner; players: PlayerWithMove[] }[];
 }) {
-  // For draft view, we show players whose contract is 0 and negotiation is false,
-  // OR explicitly flagged to_draft. Match the old logic.
   const ownerMap = new Map(ownersWithPlayers.map((o) => [o.owner.id, o.owner]));
   const draftList = players.map((p) => ({
     ...p,
-    ownerName: p.ownerId ? ownerMap.get(p.ownerId)?.ownerName ?? "-" : "-",
+    ownerName: p.ownerId ? ownerMap.get(p.ownerId)?.ownerName ?? "—" : "—",
   }));
+
+  const thClass = "px-3 py-3 text-left text-[11px] font-medium uppercase tracking-wider text-fg-subtle";
+  const tdClass = "px-3 py-3";
 
   return (
     <div>
-      <h3 className="mb-4 text-lg font-medium">
+      <h3 className="mb-4 text-[15px] font-medium text-fg">
         These players are going to the draft no matter what
       </h3>
-      <div className="overflow-hidden rounded-lg bg-white shadow">
-        <table className="min-w-full divide-y divide-gray-200">
-          <thead className="bg-gray-50">
+      <div className="overflow-hidden rounded-xl border border-line bg-surface">
+        <table className="min-w-full divide-y divide-line">
+          <thead className="bg-elevated/50">
             <tr>
-              <th className="px-3 py-3"></th>
-              <th className="px-3 py-3 text-left text-xs font-medium uppercase text-gray-500">Player</th>
-              <th className="px-3 py-3 text-left text-xs font-medium uppercase text-gray-500">NFL Team</th>
-              <th className="px-3 py-3 text-left text-xs font-medium uppercase text-gray-500">Position</th>
-              <th className="px-3 py-3 text-center text-xs font-medium uppercase text-gray-500">Owner</th>
-              <th className="px-3 py-3 text-center text-xs font-medium uppercase text-gray-500">Contract</th>
-              <th className="px-3 py-3 text-center text-xs font-medium uppercase text-gray-500">Negotiation?</th>
+              <th className={thClass}></th>
+              <th className={thClass}>Player</th>
+              <th className={thClass}>NFL Team</th>
+              <th className={thClass}>Position</th>
+              <th className={`${thClass} text-center`}>Owner</th>
+              <th className={`${thClass} text-center`}>Contract</th>
+              <th className={`${thClass} text-center`}>Negotiation?</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-gray-200 bg-white">
+          <tbody className="divide-y divide-line">
             {draftList.map((player) => (
-              <tr key={player.id} className="hover:bg-gray-50">
-                <td className="px-3 py-3">
+              <tr key={player.id} className="transition-colors hover:bg-hover/50">
+                <td className={tdClass}>
                   {player.imageUrl && (
-                    <Image
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
                       src={player.imageUrl}
                       alt={player.playerName}
-                      width={70}
-                      height={70}
-                      className="rounded"
-                      unoptimized
+                      className="h-11 w-11 rounded-lg object-cover"
                     />
                   )}
                 </td>
-                <td className="px-3 py-3 font-medium">{player.playerName}</td>
-                <td className="px-3 py-3 text-gray-600">{player.nflTeam}</td>
-                <td className="px-3 py-3 text-gray-600">{player.position}</td>
-                <td className="px-3 py-3 text-center text-sm font-medium">
+                <td className={`${tdClass} font-medium text-fg`}>{player.playerName}</td>
+                <td className={`${tdClass} text-fg-muted`}>{player.nflTeam}</td>
+                <td className={`${tdClass} text-fg-muted`}>{player.position}</td>
+                <td className={`${tdClass} text-center text-[13px] font-medium text-fg-muted`}>
                   {player.ownerName}
                 </td>
-                <td className="px-3 py-3 text-center text-sm font-bold">
+                <td className={`${tdClass} text-center text-[13px] font-bold text-fg`}>
                   {player.contractYears == null ? "" : player.contractYears}
                 </td>
-                <td className="px-3 py-3 text-center text-xl">
-                  {player.negotiationAvailable ? "✅" : "❌"}
+                <td className={`${tdClass} text-center`}>
+                  {player.negotiationAvailable ? (
+                    <span className="text-success">✓</span>
+                  ) : (
+                    <span className="text-fg-subtle">—</span>
+                  )}
                 </td>
               </tr>
             ))}
             {draftList.length === 0 && (
               <tr>
-                <td colSpan={7} className="px-4 py-8 text-center text-gray-500">
+                <td colSpan={7} className="px-4 py-8 text-center text-[14px] text-fg-muted">
                   No players in the draft pool yet.
                 </td>
               </tr>
@@ -223,61 +226,97 @@ function PlayerTable({
   showAction,
   isCutTable,
 }: {
-  players: Player[];
+  players: PlayerWithMove[];
   showAction: boolean;
   isCutTable?: boolean;
 }) {
+  const thClass = "px-3 py-3 text-left text-[11px] font-medium uppercase tracking-wider text-fg-subtle";
+  const tdClass = "px-3 py-3";
+
   return (
-    <div className="overflow-hidden rounded-lg bg-white shadow">
-      <table className="min-w-full divide-y divide-gray-200">
-        <thead className="bg-gray-50">
+    <div className="overflow-hidden rounded-xl border border-line bg-surface">
+      <table className="min-w-full divide-y divide-line">
+        <thead className="bg-elevated/50">
           <tr>
-            <th className="px-3 py-3"></th>
-            <th className="px-3 py-3 text-left text-xs font-medium uppercase text-gray-500">Player</th>
-            <th className="px-3 py-3 text-left text-xs font-medium uppercase text-gray-500">NFL Team</th>
-            <th className="px-3 py-3 text-left text-xs font-medium uppercase text-gray-500">Position</th>
+            <th className={thClass}></th>
+            <th className={thClass}>Player</th>
+            <th className={thClass}>NFL Team</th>
+            <th className={thClass}>Position</th>
             {isCutTable ? (
-              <th className="px-3 py-3 text-center text-xs font-medium uppercase text-gray-500">Action</th>
+              <th className={`${thClass} text-center`}>Action</th>
             ) : showAction ? (
               <>
-                <th className="px-3 py-3 text-center text-xs font-medium uppercase text-gray-500">Contract</th>
-                <th className="px-3 py-3 text-center text-xs font-medium uppercase text-gray-500">Negotiation?</th>
+                <th className={`${thClass} text-center`}>Action</th>
+                <th className={`${thClass} text-center`}>New Contract</th>
+                <th className={`${thClass} text-center`}>Negotiation?</th>
               </>
             ) : (
               <>
-                <th className="px-3 py-3 text-center text-xs font-medium uppercase text-gray-500">Contract</th>
-                <th className="px-3 py-3 text-center text-xs font-medium uppercase text-gray-500">Negotiation?</th>
+                <th className={`${thClass} text-center`}>Contract</th>
+                <th className={`${thClass} text-center`}>Negotiation?</th>
               </>
             )}
           </tr>
         </thead>
-        <tbody className="divide-y divide-gray-200 bg-white">
+        <tbody className="divide-y divide-line">
           {players.map((player) => (
-            <tr key={player.id} className="hover:bg-gray-50">
-              <td className="px-3 py-3">
+            <tr key={player.id} className="transition-colors hover:bg-hover/50">
+              <td className={tdClass}>
                 {player.imageUrl && (
                   <Image
                     src={player.imageUrl}
                     alt={player.playerName}
-                    width={showAction ? 70 : 100}
-                    height={showAction ? 70 : 100}
-                    className="rounded"
+                    width={44}
+                    height={44}
+                    className="rounded-lg"
                     unoptimized
                   />
                 )}
               </td>
-              <td className="px-3 py-3 font-medium">{player.playerName}</td>
-              <td className="px-3 py-3 text-gray-600">{player.nflTeam}</td>
-              <td className="px-3 py-3 text-gray-600">{player.position}</td>
+              <td className={`${tdClass} font-medium text-fg`}>{player.playerName}</td>
+              <td className={`${tdClass} text-fg-muted`}>{player.nflTeam}</td>
+              <td className={`${tdClass} text-fg-muted`}>{player.position}</td>
               {isCutTable ? (
-                <td className="px-3 py-3 text-center font-bold">Cut</td>
+                <td className={`${tdClass} text-center font-medium text-danger`}>
+                  {player.action === "cut" ? "Cut" : "Expired"}
+                </td>
+              ) : showAction ? (
+                <>
+                  <td className={`${tdClass} text-center font-medium text-fg-muted`}>
+                    {player.action === "nothing"
+                      ? "Carry Over"
+                      : player.action === "sign"
+                        ? "Signed"
+                        : player.action === "renegotiate"
+                          ? "Renegotiated"
+                          : player.action === "cut"
+                            ? "Cut"
+                            : "—"}
+                  </td>
+                  <td className={`${tdClass} text-center text-xl font-bold text-fg`}>
+                    {player.newContract == null || player.newContract === 0
+                      ? ""
+                      : player.newContract}
+                  </td>
+                  <td className={`${tdClass} text-center`}>
+                    {player.newNegotiationAvailable ? (
+                      <span className="text-success">✓</span>
+                    ) : (
+                      <span className="text-fg-subtle">—</span>
+                    )}
+                  </td>
+                </>
               ) : (
                 <>
-                  <td className="px-3 py-3 text-center text-2xl font-bold">
+                  <td className={`${tdClass} text-center text-xl font-bold text-fg`}>
                     {player.contractYears == null ? "" : player.contractYears}
                   </td>
-                  <td className="px-3 py-3 text-center text-2xl">
-                    {player.negotiationAvailable ? "✅" : "❌"}
+                  <td className={`${tdClass} text-center`}>
+                    {player.negotiationAvailable ? (
+                      <span className="text-success">✓</span>
+                    ) : (
+                      <span className="text-fg-subtle">—</span>
+                    )}
                   </td>
                 </>
               )}
@@ -285,13 +324,14 @@ function PlayerTable({
           ))}
           {players.length === 0 && (
             <tr>
-              <td colSpan={isCutTable ? 5 : 6} className="px-4 py-8 text-center text-gray-500">
+              <td colSpan={isCutTable ? 5 : showAction ? 7 : 6} className="px-4 py-8 text-center text-[14px] text-fg-muted">
                 No players.
               </td>
             </tr>
           )}
-        </tbody>
-      </table>
-    </div>
-  );
-}
+          </tbody>
+        </table>
+      </div>
+    );
+  }
+

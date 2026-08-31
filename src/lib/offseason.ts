@@ -132,8 +132,10 @@ export function computeMove(
       return {
         newContract: 0,
         newNegotiationAvailable: player.negotiationAvailable,
-        // Penalty = ceil(oldYears / 2). Player goes to draft.
-        yearDebit: calculateCutPenalty(oldYearsNum),
+        // Contract years are sunk cost (already committed).
+        // Penalty = ceil(oldYears / 2) is an ADDITIONAL cap reduction.
+        // Player goes to draft pool.
+        yearDebit: oldYearsNum + calculateCutPenalty(oldYearsNum),
       };
     }
 
@@ -193,7 +195,7 @@ export function validateRoster(
         negotiationsUsed += 1;
       }
       if (move.action === "cut") {
-        capPenalties += result.yearDebit;
+        capPenalties += calculateCutPenalty(player.contractYears ?? 0);
       }
     } catch (e) {
       errors.push(
@@ -310,10 +312,13 @@ export function getYearOptions(
       options.push(i);
     }
   } else if (action === "renegotiate") {
-    // Renegotiate: can extend (1..remaining) or reduce (negative delta).
+    // Renegotiate: can extend (1..maxExtend) or reduce (negative delta).
+    // The new contract = oldYearsNum + delta must fit in remaining cap,
+    // so max delta = remaining - oldYearsNum.
     // The min is -(oldYears) which would zero out the contract.
     const minDelta = -oldYearsNum;
-    for (let i = minDelta; i <= remaining; i++) {
+    const maxDelta = remaining - oldYearsNum;
+    for (let i = minDelta; i <= maxDelta; i++) {
       if (i !== 0) options.push(i);
     }
   }

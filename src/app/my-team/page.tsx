@@ -9,9 +9,9 @@ export default async function MyTeamPage() {
 
   if (!season) {
     return (
-      <div className="mx-auto max-w-2xl px-4 py-16 text-center">
-        <h1 className="text-2xl font-bold">No active season</h1>
-        <p className="mt-2 text-gray-600">
+      <div className="mx-auto max-w-2xl px-6 py-20 text-center">
+        <h1 className="text-xl font-semibold text-fg">No active season</h1>
+        <p className="mt-2 text-[14px] text-fg-muted">
           The offseason hasn&apos;t been opened yet. Check back later.
         </p>
       </div>
@@ -21,7 +21,7 @@ export default async function MyTeamPage() {
   const players = await getPlayersWithMoves(season.id, owner.id);
 
   return (
-    <div className="mx-auto max-w-5xl px-4 py-8">
+    <div className="mx-auto max-w-5xl px-6 py-8">
       <TeamViewTable
         players={players}
         ownerName={owner.ownerName ?? owner.name}

@@ -28,7 +28,7 @@ CREATE TABLE IF NOT EXISTS "user" (
   id text PRIMARY KEY,
   name text NOT NULL,
   email text NOT NULL UNIQUE,
-  emailVerified boolean NOT NULL DEFAULT false,
+  "emailVerified" boolean NOT NULL DEFAULT false,
   image text,
   -- League-specific fields (from additionalFields in auth.ts)
   role text NOT NULL DEFAULT 'user' CHECK (role IN ('user', 'admin')),
@@ -38,46 +38,46 @@ CREATE TABLE IF NOT EXISTS "user" (
   "availableNegotiations" integer NOT NULL DEFAULT 1,
   "rosterSubmitted" boolean NOT NULL DEFAULT false,
   "canSubmit" boolean NOT NULL DEFAULT false,
-  created_at timestamp NOT NULL DEFAULT now(),
-  updated_at timestamp NOT NULL DEFAULT now()
+  "createdAt" timestamp NOT NULL DEFAULT now(),
+  "updatedAt" timestamp NOT NULL DEFAULT now()
 );
 
 CREATE TABLE IF NOT EXISTS "session" (
   id text PRIMARY KEY,
-  expiresAt timestamp NOT NULL,
+  "expiresAt" timestamp NOT NULL,
   token text NOT NULL UNIQUE,
-  createdAt timestamp NOT NULL,
-  updatedAt timestamp NOT NULL,
-  ipAddress text,
-  userAgent text,
-  userId text NOT NULL REFERENCES "user"(id) ON DELETE CASCADE
+  "createdAt" timestamp NOT NULL,
+  "updatedAt" timestamp NOT NULL,
+  "ipAddress" text,
+  "userAgent" text,
+  "userId" text NOT NULL REFERENCES "user"(id) ON DELETE CASCADE
 );
 
 CREATE TABLE IF NOT EXISTS "account" (
   id text PRIMARY KEY,
-  accountId text NOT NULL,
-  providerId text NOT NULL,
-  userId text NOT NULL REFERENCES "user"(id) ON DELETE CASCADE,
-  accessToken text,
-  refreshToken text,
-  idToken text,
-  accessTokenExpiresAt timestamp,
-  refreshTokenExpiresAt timestamp,
+  "accountId" text NOT NULL,
+  "providerId" text NOT NULL,
+  "userId" text NOT NULL REFERENCES "user"(id) ON DELETE CASCADE,
+  "accessToken" text,
+  "refreshToken" text,
+  "idToken" text,
+  "accessTokenExpiresAt" timestamp,
+  "refreshTokenExpiresAt" timestamp,
   scope text,
   password text,
-  createdAt timestamp NOT NULL,
-  updatedAt timestamp NOT NULL,
+  "createdAt" timestamp NOT NULL,
+  "updatedAt" timestamp NOT NULL,
   issuer text,
-  UNIQUE (issuer, accountId)
+  UNIQUE (issuer, "accountId")
 );
 
 CREATE TABLE IF NOT EXISTS "verification" (
   id text PRIMARY KEY,
   identifier text NOT NULL,
   value text NOT NULL,
-  expiresAt timestamp NOT NULL,
-  createdAt timestamp,
-  updatedAt timestamp
+  "expiresAt" timestamp NOT NULL,
+  "createdAt" timestamp,
+  "updatedAt" timestamp
 );
 
 -- ============================================================
@@ -216,9 +216,18 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+-- Separate function for auth tables which use camelCase column names.
+CREATE OR REPLACE FUNCTION update_updated_at_auth()
+RETURNS trigger AS $$
+BEGIN
+  NEW."updatedAt" = now();
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
 CREATE OR REPLACE TRIGGER trg_user_updated
   BEFORE UPDATE ON "user"
-  FOR EACH ROW EXECUTE FUNCTION update_updated_at();
+  FOR EACH ROW EXECUTE FUNCTION update_updated_at_auth();
 
 CREATE OR REPLACE TRIGGER trg_season_updated
   BEFORE UPDATE ON "season"

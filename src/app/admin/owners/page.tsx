@@ -1,46 +1,32 @@
-import { getOwners, getActiveSeason } from "@/lib/data";
-import { OwnerManager } from "./owner-manager";
-import { updateOwnerBudgetAction, updateOwnerLockAction } from "../actions";
+import { getOwners } from "@/lib/data";
+import { OwnersManager } from "./owners-manager";
+import {
+  createOwnerAction,
+  updateOwnerProfileAction,
+  resetOwnerPasswordAction,
+  deleteOwnerAction,
+  toggleOwnerRoleAction,
+} from "../actions";
 
 export default async function AdminOwnersPage() {
-  const [owners, season] = await Promise.all([
-    getOwners(),
-    getActiveSeason(),
-  ]);
-
-  if (!season) {
-    return (
-      <div className="rounded-lg bg-white p-6 shadow">
-        <p className="text-gray-600">No active season.</p>
-      </div>
-    );
-  }
+  const owners = await getOwners();
 
   return (
-    <div className="rounded-lg bg-white p-6 shadow">
-      <h2 className="mb-4 text-lg font-bold">Owners — Budgets & Submission Locks</h2>
-      <p className="mb-4 text-sm text-gray-600">
-        Set each owner&apos;s salary cap years and renegotiation tokens for the{" "}
-        {season.year} offseason. Toggle &quot;Can Submit&quot; to open/close
-        each owner&apos;s submission window.
-      </p>
-      <OwnerManager
-        owners={owners.map((o) => ({
-          id: o.id,
-          ownerName: o.ownerName ?? o.name,
-          teamName: o.teamName ?? "",
-          email: o.email,
-          availableYears: o.availableYears,
-          availableNegotiations: o.availableNegotiations,
-          canSubmit: o.canSubmit,
-          rosterSubmitted: o.rosterSubmitted,
-        }))}
-        seasonId={season.id}
-        baseCapYears={season.baseCapYears}
-        baseNegotiations={season.baseNegotiations}
-        updateBudgetAction={updateOwnerBudgetAction}
-        updateLockAction={updateOwnerLockAction}
-      />
-    </div>
+    <OwnersManager
+      owners={owners.map((o) => ({
+        id: o.id,
+        name: o.name,
+        email: o.email,
+        role: o.role,
+        ownerName: o.ownerName,
+        teamName: o.teamName,
+        createdAt: o.createdAt,
+      }))}
+      createAction={createOwnerAction}
+      updateProfileAction={updateOwnerProfileAction}
+      resetPasswordAction={resetOwnerPasswordAction}
+      deleteAction={deleteOwnerAction}
+      toggleRoleAction={toggleOwnerRoleAction}
+    />
   );
 }

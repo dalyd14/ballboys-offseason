@@ -16,11 +16,7 @@ export default function SignInPage() {
     setLoading(true);
     setError(null);
 
-    const result = await signIn.email({
-      email,
-      password,
-    });
-
+    const result = await signIn.email({ email, password });
     setLoading(false);
 
     if (result.error) {
@@ -32,24 +28,27 @@ export default function SignInPage() {
   };
 
   return (
-    <div className="flex min-h-[calc(100vh-3.5rem)] flex-col items-center justify-center px-4">
-      <div className="w-full max-w-md">
-        <h1 className="mb-2 text-center text-3xl font-bold">
-          Welcome to Ballboys Offseason
-        </h1>
-        <p className="mb-8 text-center text-gray-600">
-          Sign in with the email and password that Dave gave you.
-        </p>
+    <div className="flex min-h-[calc(100vh-3rem)] flex-col items-center justify-center px-6">
+      <div className="w-full max-w-sm">
+        <div className="mb-8 text-center">
+          <div className="mb-3 text-3xl">🏈</div>
+          <h1 className="text-xl font-semibold tracking-tight text-fg">
+            Ballboys Offseason
+          </h1>
+          <p className="mt-2 text-[13px] text-fg-muted">
+            Sign in with the email and password Dave gave you.
+          </p>
+        </div>
 
         {error && (
-          <div className="mb-4 rounded-md bg-red-50 border border-red-200 p-4 text-center text-sm text-red-700">
+          <div className="mb-4 rounded-lg border border-danger/20 bg-danger/5 px-4 py-3 text-center text-[13px] text-danger">
             {error}
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="space-y-4 rounded-lg bg-white p-6 shadow-md">
-          <div>
-            <label htmlFor="email" className="block text-sm font-medium text-gray-700">
+        <form onSubmit={handleSubmit} className="space-y-4 rounded-xl border border-line bg-surface p-6">
+          <div className="space-y-1.5">
+            <label htmlFor="email" className="block text-[13px] font-medium text-fg">
               Email
             </label>
             <input
@@ -58,13 +57,13 @@ export default function SignInPage() {
               required
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+              className="w-full rounded-lg border border-line bg-elevated px-3 py-2 text-[14px] text-fg placeholder:text-fg-subtle focus:border-accent focus:outline-none"
               placeholder="you@example.com"
             />
           </div>
 
-          <div>
-            <label htmlFor="password" className="block text-sm font-medium text-gray-700">
+          <div className="space-y-1.5">
+            <label htmlFor="password" className="block text-[13px] font-medium text-fg">
               Password
             </label>
             <input
@@ -73,7 +72,7 @@ export default function SignInPage() {
               required
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+              className="w-full rounded-lg border border-line bg-elevated px-3 py-2 text-[14px] text-fg placeholder:text-fg-subtle focus:border-accent focus:outline-none"
               placeholder="Password"
             />
           </div>
@@ -81,13 +80,13 @@ export default function SignInPage() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full rounded-md bg-green-600 px-4 py-2 text-white font-medium hover:bg-green-700 disabled:opacity-50"
+            className="w-full rounded-lg bg-accent px-4 py-2 text-[14px] font-medium text-white transition-colors hover:bg-accent-hover disabled:opacity-40"
           >
-            {loading ? "Signing in..." : "Login"}
+            {loading ? "Signing in..." : "Sign In"}
           </button>
         </form>
 
-        <p className="mt-8 text-center text-sm text-gray-500">
+        <p className="mt-6 text-center text-[12px] text-fg-subtle">
           If you are not a part of the Ballboys League, then I bid you adieu 👋
         </p>
       </div>

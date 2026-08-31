@@ -1,16 +1,20 @@
 "use client";
 
+import Link from "next/link";
 import { useState } from "react";
+import { SearchIcon, EditIcon, HistoryIcon } from "@/components/icons";
 
 interface PlayerRow {
   id: string;
   playerName: string;
   nflTeam: string;
   position: string;
+  imageUrl: string | null;
   ownerName: string;
   contractYears: number | null;
   negotiationAvailable: boolean;
   toDraft: boolean;
+  espnPlayerId: string | null;
 }
 
 interface PlayerManagerProps {
@@ -58,50 +62,60 @@ export function PlayerManager({
   const filtered = players.filter((p) => {
     const q = search.toLowerCase();
     return (
-      p.playerName.toLowerCase().includes(q) ||
-      p.ownerName.toLowerCase().includes(q) ||
-      p.nflTeam.toLowerCase().includes(q)
+      (p.playerName ?? "").toLowerCase().includes(q) ||
+      (p.ownerName ?? "").toLowerCase().includes(q) ||
+      (p.nflTeam ?? "").toLowerCase().includes(q)
     );
   });
+
+  const thClass = "px-3 py-2.5 text-left text-[11px] font-medium uppercase tracking-wider text-fg-subtle";
+  const tdClass = "px-3 py-2.5";
 
   return (
     <div className="space-y-4">
       {error && (
-        <div className="rounded-md bg-red-50 border border-red-200 p-3 text-sm text-red-700">
+        <div className="rounded-lg border border-danger/20 bg-danger/5 px-4 py-3 text-[13px] text-danger">
           {error}
         </div>
       )}
 
-      <input
-        type="text"
-        placeholder="Search players, teams, owners..."
-        value={search}
-        onChange={(e) => setSearch(e.target.value)}
-        className="w-full max-w-sm rounded-md border border-gray-300 px-3 py-2 text-sm"
-      />
+      <div className="relative max-w-sm">
+        <SearchIcon className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-fg-subtle" />
+        <input
+          type="text"
+          placeholder="Search players, teams, owners..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          className="w-full rounded-lg border border-line bg-elevated py-2 pl-9 pr-3 text-[13px] text-fg placeholder:text-fg-subtle focus:border-accent focus:outline-none"
+        />
+      </div>
 
-      <div className="max-h-[60vh] overflow-auto rounded-md border border-gray-200">
-        <table className="min-w-full divide-y divide-gray-200">
-          <thead className="bg-gray-50 sticky top-0">
+      <div className="max-h-[60vh] overflow-auto rounded-lg border border-line">
+        <table className="min-w-full divide-y divide-line">
+          <thead className="bg-elevated/50 sticky top-0">
             <tr>
-              <th className="px-3 py-2 text-left text-xs font-medium uppercase text-gray-500">Player</th>
-              <th className="px-3 py-2 text-left text-xs font-medium uppercase text-gray-500">Pos</th>
-              <th className="px-3 py-2 text-left text-xs font-medium uppercase text-gray-500">Team</th>
-              <th className="px-3 py-2 text-left text-xs font-medium uppercase text-gray-500">Owner</th>
-              <th className="px-3 py-2 text-center text-xs font-medium uppercase text-gray-500">Contract</th>
-              <th className="px-3 py-2 text-center text-xs font-medium uppercase text-gray-500">Negotiation?</th>
-              <th className="px-3 py-2 text-center text-xs font-medium uppercase text-gray-500">Draft?</th>
-              <th className="px-3 py-2"></th>
+              <th className={thClass}>Player</th>
+              <th className={thClass}>Pos</th>
+              <th className={thClass}>Team</th>
+              <th className={thClass}>Owner</th>
+              <th className={`${thClass} text-center`}>Contract</th>
+              <th className={`${thClass} text-center`}>Negotiation</th>
+              <th className={`${thClass} text-center`}>Draft?</th>
+              <th className={thClass}></th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-gray-200 bg-white">
+          <tbody className="divide-y divide-line">
             {filtered.map((p) => (
-              <tr key={p.id} className="hover:bg-gray-50">
-                <td className="px-3 py-2 font-medium">{p.playerName}</td>
-                <td className="px-3 py-2 text-gray-600">{p.position}</td>
-                <td className="px-3 py-2 text-gray-600">{p.nflTeam}</td>
-                <td className="px-3 py-2 text-gray-600">{p.ownerName}</td>
-                <td className="px-3 py-2 text-center font-bold">
+              <tr key={p.id} className="transition-colors hover:bg-hover/50">
+                <td className={`${tdClass} font-medium text-fg`}>
+                  <Link href={`/admin/players/${p.id}`} className="hover:underline">
+                    {p.playerName}
+                  </Link>
+                </td>
+                <td className={`${tdClass} text-fg-muted`}>{p.position}</td>
+                <td className={`${tdClass} text-fg-muted`}>{p.nflTeam}</td>
+                <td className={`${tdClass} text-fg-muted`}>{p.ownerName}</td>
+                <td className={`${tdClass} text-center`}>
                   {editing === p.id ? (
                     <input
                       type="number"
@@ -111,53 +125,70 @@ export function PlayerManager({
                         setYears(v === "" ? "none" : parseInt(v));
                       }}
                       placeholder="none"
-                      className="w-16 rounded border border-gray-300 px-2 py-1 text-center text-sm"
+                      className="w-16 rounded border border-line bg-elevated px-2 py-1 text-center text-[14px] text-fg focus:border-accent focus:outline-none"
                     />
                   ) : p.contractYears == null ? (
-                    <span className="text-gray-400">none</span>
+                    <span className="text-fg-subtle">none</span>
                   ) : (
-                    p.contractYears
+                    <span className="font-semibold text-fg">{p.contractYears}</span>
                   )}
                 </td>
-                <td className="px-3 py-2 text-center text-xl">
+                <td className={`${tdClass} text-center`}>
                   {editing === p.id ? (
                     <input
                       type="checkbox"
                       checked={negotiation}
                       onChange={(e) => setNegotiation(e.target.checked)}
+                      className="h-4 w-4 accent-accent"
                     />
                   ) : p.negotiationAvailable ? (
-                    "✅"
+                    <span className="text-success">✓</span>
                   ) : (
-                    "❌"
+                    <span className="text-fg-subtle">—</span>
                   )}
                 </td>
-                <td className="px-3 py-2 text-center text-sm">
-                  {p.toDraft ? "❌" : "—"}
-                </td>
-                <td className="px-3 py-2 text-right">
-                  {editing === p.id ? (
-                    <button
-                      onClick={() => save(p.id)}
-                      disabled={busy}
-                      className="rounded-md bg-blue-600 px-3 py-1 text-xs text-white font-medium hover:bg-blue-700"
-                    >
-                      Save
-                    </button>
+                <td className={`${tdClass} text-center text-[13px]`}>
+                  {p.toDraft ? (
+                    <span className="text-danger">✕</span>
                   ) : (
-                    <button
-                      onClick={() => startEdit(p)}
-                      className="text-xs text-blue-600 hover:underline"
-                    >
-                      Edit
-                    </button>
+                    <span className="text-fg-subtle">—</span>
                   )}
+                </td>
+                <td className={`${tdClass} text-right`}>
+                  <div className="flex items-center justify-end gap-2">
+                    {editing === p.id ? (
+                      <button
+                        onClick={() => save(p.id)}
+                        disabled={busy}
+                        className="rounded-lg bg-accent px-3 py-1 text-[12px] font-medium text-white transition-colors hover:bg-accent-hover disabled:opacity-40"
+                      >
+                        Save
+                      </button>
+                    ) : (
+                      <>
+                        <Link
+                          href={`/admin/players/${p.id}`}
+                          className="flex items-center gap-1 text-[12px] text-fg-muted hover:text-fg"
+                          title="Transaction history"
+                        >
+                          <HistoryIcon className="h-3.5 w-3.5" />
+                        </Link>
+                        <button
+                          onClick={() => startEdit(p)}
+                          className="flex items-center gap-1 text-[12px] text-accent hover:underline"
+                        >
+                          <EditIcon className="h-3.5 w-3.5" />
+                          Edit
+                        </button>
+                      </>
+                    )}
+                  </div>
                 </td>
               </tr>
             ))}
             {filtered.length === 0 && (
               <tr>
-                <td colSpan={8} className="px-4 py-8 text-center text-gray-500">
+                <td colSpan={8} className="px-4 py-8 text-center text-[13px] text-fg-muted">
                   No players found.
                 </td>
               </tr>
