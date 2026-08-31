@@ -39,11 +39,44 @@ export default async function AdminAuditPage() {
   const thClass = "px-3 py-2.5 text-left text-[11px] font-medium uppercase tracking-wider text-fg-subtle";
 
   return (
-    <div className="rounded-xl border border-line bg-surface p-6">
+    <div className="rounded-xl border border-line bg-surface p-4 sm:p-6">
       <h2 className="mb-5 text-[13px] font-semibold uppercase tracking-wider text-fg-muted">
         Audit Log — {season.year} Season
       </h2>
-      <div className="max-h-[70vh] overflow-auto rounded-lg border border-line">
+
+      {/* Mobile: Card list */}
+      <div className="max-h-[70vh] space-y-2.5 overflow-auto sm:hidden">
+        {log.map((entry) => {
+          const details = entry.details as Record<string, unknown> | null;
+          return (
+            <div key={entry.id} className="rounded-lg border border-line bg-elevated/50 p-3">
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-[13px] font-medium text-fg">
+                  {eventLabels[entry.eventType] ?? entry.eventType}
+                </span>
+                <span className="shrink-0 text-[11px] text-fg-subtle">
+                  {entry.createdAt.toLocaleDateString()}
+                </span>
+              </div>
+              <div className="mt-1.5 flex flex-wrap gap-x-3 gap-y-0.5 text-[12px] text-fg-muted">
+                <div><span className="text-fg-subtle">Actor:</span> {entry.actorId ? ownerMap.get(entry.actorId) ?? "—" : "—"}</div>
+                <div><span className="text-fg-subtle">Owner:</span> {entry.ownerId ? ownerMap.get(entry.ownerId) ?? "—" : "—"}</div>
+              </div>
+              {details && (
+                <p className="mt-1.5 text-[12px] text-fg-muted">{formatDetails(details)}</p>
+              )}
+            </div>
+          );
+        })}
+        {log.length === 0 && (
+          <div className="rounded-lg border border-line p-8 text-center text-[13px] text-fg-muted">
+            No activity recorded yet.
+          </div>
+        )}
+      </div>
+
+      {/* Desktop: Table */}
+      <div className="hidden max-h-[70vh] overflow-auto rounded-lg border border-line sm:block">
         <table className="min-w-full divide-y divide-line">
           <thead className="bg-elevated/50 sticky top-0">
             <tr>

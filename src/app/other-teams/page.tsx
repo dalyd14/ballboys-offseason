@@ -9,7 +9,7 @@ export default async function OtherTeamsPage() {
 
   if (!season) {
     return (
-      <div className="mx-auto max-w-2xl px-6 py-20 text-center">
+      <div className="mx-auto max-w-2xl px-4 py-20 text-center sm:px-6">
         <h1 className="text-xl font-semibold text-fg">No active season</h1>
       </div>
     );
@@ -52,7 +52,7 @@ export default async function OtherTeamsPage() {
   });
 
   return (
-    <div className="mx-auto max-w-[1200px] px-6 py-8">
+    <div className="mx-auto max-w-[1200px] px-4 py-6 sm:px-6 sm:py-8">
       <OtherTeamView
         ownersWithPlayers={ownersWithPlayers}
         draftPlayers={draftPlayers}

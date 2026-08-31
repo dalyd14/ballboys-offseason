@@ -154,15 +154,15 @@ export function OffseasonWorkflow({
               {/* Season header */}
               <button
                 onClick={() => toggleSeason(season.id)}
-                className="flex w-full items-center gap-4 px-5 py-4 text-left transition-colors hover:bg-hover/50"
+                className="flex w-full items-center gap-3 px-4 py-4 text-left transition-colors hover:bg-hover/50 sm:gap-4 sm:px-5"
               >
                 {isExpanded ? (
-                  <ChevronDownIcon className="h-5 w-5 text-fg-subtle" />
+                  <ChevronDownIcon className="h-5 w-5 shrink-0 text-fg-subtle" />
                 ) : (
-                  <ChevronRightIcon className="h-5 w-5 text-fg-subtle" />
+                  <ChevronRightIcon className="h-5 w-5 shrink-0 text-fg-subtle" />
                 )}
-                <span className="text-[18px] font-semibold text-fg">{season.year}</span>
-                <span className={`rounded-full border px-2.5 py-0.5 text-[11px] font-medium capitalize ${
+                <span className="shrink-0 text-[18px] font-semibold text-fg">{season.year}</span>
+                <span className={`shrink-0 rounded-full border px-2.5 py-0.5 text-[11px] font-medium capitalize ${
                   isActive
                     ? "border-accent/30 bg-accent/10 text-accent"
                     : "border-line bg-elevated text-fg-subtle"
@@ -170,12 +170,12 @@ export function OffseasonWorkflow({
                   {season.status}
                 </span>
                 {isActive && (
-                  <span className="text-[13px] text-fg-muted">
+                  <span className="hidden text-[13px] text-fg-muted sm:inline">
                     {completedCount}/3 steps complete
                   </span>
                 )}
                 {!isActive && (
-                  <span className="text-[13px] text-fg-subtle">
+                  <span className="hidden text-[13px] text-fg-subtle sm:inline">
                     {playerCount} players
                   </span>
                 )}
@@ -250,7 +250,7 @@ function CreateSeasonForm({
       <h3 className="text-[14px] font-semibold text-fg">Create New Season</h3>
       {error && <ErrorBanner message={error} />}
 
-      <form onSubmit={handleCreate} className="flex flex-wrap items-end gap-4">
+      <form onSubmit={handleCreate} className="flex flex-col gap-4 sm:flex-row sm:flex-wrap sm:items-end">
         <div className="space-y-1.5">
           <label className="block text-[12px] text-fg-subtle">Year</label>
           <input type="number" value={year} onChange={(e) => setYear(parseInt(e.target.value))} className={inputClass} />
@@ -263,20 +263,22 @@ function CreateSeasonForm({
           <label className="block text-[12px] text-fg-subtle">Base Negotiations</label>
           <input type="number" value={negotiations} onChange={(e) => setNegotiations(parseInt(e.target.value))} className={inputClass} />
         </div>
-        <button
-          type="submit"
-          disabled={loading}
-          className="rounded-lg bg-accent px-4 py-2 text-[13px] font-medium text-white transition-colors hover:bg-accent-hover disabled:opacity-40"
-        >
-          {loading ? "Creating..." : "Create Season"}
-        </button>
-        <button
-          type="button"
-          onClick={onCancel}
-          className="rounded-lg border border-line bg-elevated px-4 py-2 text-[13px] font-medium text-fg-muted transition-colors hover:bg-hover"
-        >
-          Cancel
-        </button>
+        <div className="flex gap-3">
+          <button
+            type="submit"
+            disabled={loading}
+            className="rounded-lg bg-accent px-4 py-2 text-[13px] font-medium text-white transition-colors hover:bg-accent-hover disabled:opacity-40"
+          >
+            {loading ? "Creating..." : "Create Season"}
+          </button>
+          <button
+            type="button"
+            onClick={onCancel}
+            className="rounded-lg border border-line bg-elevated px-4 py-2 text-[13px] font-medium text-fg-muted transition-colors hover:bg-hover"
+          >
+            Cancel
+          </button>
+        </div>
       </form>
     </div>
   );
@@ -371,7 +373,7 @@ function SeasonChecklist({
   return (
     <div className="space-y-3">
       {/* Status selector */}
-      <div className="mb-2 flex items-center gap-3">
+      <div className="mb-2 flex flex-wrap items-center gap-2 sm:gap-3">
         <span className="text-[12px] text-fg-subtle">Status:</span>
         <select
           value={season.status}
@@ -718,43 +720,73 @@ function ReviewSection({
         {exceptions.length === 0 ? (
           <p className="text-[13px] text-fg-muted">No in-season cuts flagged.</p>
         ) : (
-          <div className="overflow-x-auto rounded-lg border border-line">
-            <table className="min-w-full divide-y divide-line">
-              <thead className="bg-elevated/50">
-                <tr>
-                  <th className={thClass}>Player</th>
-                  <th className={thClass}>Pos</th>
-                  <th className={thClass}>Original Owner</th>
-                  <th className={`${thClass} text-center`}>Years at Cut</th>
-                  <th className={`${thClass} text-center`}>Penalty</th>
-                  <th className={`${thClass} text-center`}>Action</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-line">
-                {exceptions.map((ex) => {
-                  const penalty = ex.contractYearsAtCut ? Math.ceil(ex.contractYearsAtCut / 2) : 0;
-                  return (
-                    <tr key={ex.id} className="transition-colors hover:bg-hover/50">
-                      <td className={`${tdClass} font-medium text-fg`}>{ex.playerName}</td>
-                      <td className={`${tdClass} text-fg-muted`}>{ex.position}</td>
-                      <td className={`${tdClass} text-fg-muted`}>{ex.ownerName}</td>
-                      <td className={`${tdClass} text-center font-semibold text-fg`}>{ex.contractYearsAtCut ?? "—"}</td>
-                      <td className={`${tdClass} text-center font-semibold text-danger`}>{penalty > 0 ? `−${penalty}y` : "—"}</td>
-                      <td className={tdClass}>
-                        <button
-                          onClick={() => handleResolve(ex.id, "cut", ex.ownerId)}
-                          disabled={busy === ex.id}
-                          className="rounded-lg border border-danger/20 bg-danger/5 px-3 py-1 text-[12px] font-medium text-danger transition-colors hover:bg-danger/10 disabled:opacity-40"
-                        >
-                          Send to Draft
-                        </button>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
+          <>
+            {/* Mobile: Card list */}
+            <div className="space-y-2.5 sm:hidden">
+              {exceptions.map((ex) => {
+                const penalty = ex.contractYearsAtCut ? Math.ceil(ex.contractYearsAtCut / 2) : 0;
+                return (
+                  <div key={ex.id} className="rounded-xl border border-warning/20 bg-warning/5 p-3">
+                    <div className="flex items-center justify-between gap-2">
+                      <p className="truncate text-[14px] font-medium text-fg">{ex.playerName}</p>
+                      <span className="shrink-0 text-[12px] text-fg-subtle">{ex.position}</span>
+                    </div>
+                    <div className="mt-1.5 flex flex-wrap gap-x-3 gap-y-0.5 text-[12px] text-fg-muted">
+                      <div><span className="text-fg-subtle">Owner:</span> {ex.ownerName}</div>
+                      <div><span className="text-fg-subtle">Years at cut:</span> <span className="font-semibold text-fg">{ex.contractYearsAtCut ?? "—"}</span></div>
+                      {penalty > 0 && <div><span className="text-fg-subtle">Penalty:</span> <span className="font-semibold text-danger">−{penalty}y</span></div>}
+                    </div>
+                    <button
+                      onClick={() => handleResolve(ex.id, "cut", ex.ownerId)}
+                      disabled={busy === ex.id}
+                      className="mt-2.5 w-full rounded-lg border border-danger/20 bg-danger/5 px-3 py-2 text-[13px] font-medium text-danger transition-colors hover:bg-danger/10 disabled:opacity-40"
+                    >
+                      Send to Draft
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Desktop: Table */}
+            <div className="hidden overflow-x-auto rounded-lg border border-line sm:block">
+              <table className="min-w-full divide-y divide-line">
+                <thead className="bg-elevated/50">
+                  <tr>
+                    <th className={thClass}>Player</th>
+                    <th className={thClass}>Pos</th>
+                    <th className={thClass}>Original Owner</th>
+                    <th className={`${thClass} text-center`}>Years at Cut</th>
+                    <th className={`${thClass} text-center`}>Penalty</th>
+                    <th className={`${thClass} text-center`}>Action</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-line">
+                  {exceptions.map((ex) => {
+                    const penalty = ex.contractYearsAtCut ? Math.ceil(ex.contractYearsAtCut / 2) : 0;
+                    return (
+                      <tr key={ex.id} className="transition-colors hover:bg-hover/50">
+                        <td className={`${tdClass} font-medium text-fg`}>{ex.playerName}</td>
+                        <td className={`${tdClass} text-fg-muted`}>{ex.position}</td>
+                        <td className={`${tdClass} text-fg-muted`}>{ex.ownerName}</td>
+                        <td className={`${tdClass} text-center font-semibold text-fg`}>{ex.contractYearsAtCut ?? "—"}</td>
+                        <td className={`${tdClass} text-center font-semibold text-danger`}>{penalty > 0 ? `−${penalty}y` : "—"}</td>
+                        <td className={tdClass}>
+                          <button
+                            onClick={() => handleResolve(ex.id, "cut", ex.ownerId)}
+                            disabled={busy === ex.id}
+                            className="rounded-lg border border-danger/20 bg-danger/5 px-3 py-1 text-[12px] font-medium text-danger transition-colors hover:bg-danger/10 disabled:opacity-40"
+                          >
+                            Send to Draft
+                          </button>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </>
         )}
       </div>
 
@@ -768,36 +800,58 @@ function ReviewSection({
         {draftCandidates.length === 0 ? (
           <p className="text-[13px] text-fg-muted">No draft candidates.</p>
         ) : (
-          <div className="overflow-x-auto rounded-lg border border-line">
-            <table className="min-w-full divide-y divide-line">
-              <thead className="bg-elevated/50">
-                <tr>
-                  <th className={thClass}>Player</th>
-                  <th className={thClass}>Pos</th>
-                  <th className={thClass}>Owner</th>
-                  <th className={`${thClass} text-center`}>Action</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-line">
-                {draftCandidates.map((p) => (
-                  <tr key={p.id} className="transition-colors hover:bg-hover/50">
-                    <td className={`${tdClass} font-medium text-fg`}>{p.playerName}</td>
-                    <td className={`${tdClass} text-fg-muted`}>{p.position}</td>
-                    <td className={`${tdClass} text-fg-muted`}>{p.ownerName}</td>
-                    <td className={`${tdClass} text-center`}>
-                      <button
-                        onClick={() => handleResolve(p.id, "cut", null)}
-                        disabled={busy === p.id}
-                        className="rounded-lg border border-line bg-elevated px-3 py-1 text-[12px] font-medium text-fg-muted transition-colors hover:bg-hover disabled:opacity-40"
-                      >
-                        Send to Draft
-                      </button>
-                    </td>
+          <>
+            {/* Mobile: Card list */}
+            <div className="space-y-2.5 sm:hidden">
+              {draftCandidates.map((p) => (
+                <div key={p.id} className="flex items-center justify-between gap-2 rounded-xl border border-line bg-surface p-3">
+                  <div className="min-w-0">
+                    <p className="truncate text-[14px] font-medium text-fg">{p.playerName}</p>
+                    <p className="text-[12px] text-fg-subtle">{p.position} · {p.ownerName}</p>
+                  </div>
+                  <button
+                    onClick={() => handleResolve(p.id, "cut", null)}
+                    disabled={busy === p.id}
+                    className="shrink-0 rounded-lg border border-line bg-elevated px-3 py-2 text-[12px] font-medium text-fg-muted transition-colors hover:bg-hover disabled:opacity-40"
+                  >
+                    Send to Draft
+                  </button>
+                </div>
+              ))}
+            </div>
+
+            {/* Desktop: Table */}
+            <div className="hidden overflow-x-auto rounded-lg border border-line sm:block">
+              <table className="min-w-full divide-y divide-line">
+                <thead className="bg-elevated/50">
+                  <tr>
+                    <th className={thClass}>Player</th>
+                    <th className={thClass}>Pos</th>
+                    <th className={thClass}>Owner</th>
+                    <th className={`${thClass} text-center`}>Action</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody className="divide-y divide-line">
+                  {draftCandidates.map((p) => (
+                    <tr key={p.id} className="transition-colors hover:bg-hover/50">
+                      <td className={`${tdClass} font-medium text-fg`}>{p.playerName}</td>
+                      <td className={`${tdClass} text-fg-muted`}>{p.position}</td>
+                      <td className={`${tdClass} text-fg-muted`}>{p.ownerName}</td>
+                      <td className={`${tdClass} text-center`}>
+                        <button
+                          onClick={() => handleResolve(p.id, "cut", null)}
+                          disabled={busy === p.id}
+                          className="rounded-lg border border-line bg-elevated px-3 py-1 text-[12px] font-medium text-fg-muted transition-colors hover:bg-hover disabled:opacity-40"
+                        >
+                          Send to Draft
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </>
         )}
       </div>
     </div>
@@ -861,7 +915,7 @@ function OwnersBudgetSection({
     <div className="space-y-4">
       {error && <ErrorBanner message={error} />}
 
-      <div className="flex items-center gap-4 text-[13px] text-fg-muted">
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-[13px] text-fg-muted">
         <span><span className="font-semibold text-fg">{submittedCount}</span> / {owners.length} submitted</span>
         <span><span className="font-semibold text-fg">{draftPoolCount}</span> in draft pool</span>
       </div>
@@ -875,7 +929,86 @@ function OwnersBudgetSection({
         </button>
       </div>
 
-      <div className="overflow-x-auto rounded-lg border border-line">
+      {/* Mobile: Card list */}
+      <div className="space-y-2.5 sm:hidden">
+        {owners.map((owner) => (
+          <div key={owner.id} className="rounded-xl border border-line bg-surface p-3">
+            <div className="flex items-center justify-between gap-2">
+              <div className="min-w-0">
+                <p className="truncate text-[14px] font-medium text-fg">{owner.ownerName}</p>
+                <p className="truncate text-[12px] text-fg-subtle">{owner.email}</p>
+              </div>
+              <button
+                onClick={() => toggleLock(owner)}
+                disabled={busy}
+                className={`flex shrink-0 items-center gap-1.5 rounded-full border px-3 py-1 text-[12px] font-medium transition-colors disabled:opacity-40 ${
+                  owner.canSubmit
+                    ? "border-success/30 bg-success/10 text-success hover:bg-success/15"
+                    : "border-danger/30 bg-danger/10 text-danger hover:bg-danger/15"
+                }`}
+              >
+                {owner.canSubmit ? <UnlockIcon className="h-3 w-3" /> : <LockIcon className="h-3 w-3" />}
+                {owner.canSubmit ? "Open" : "Locked"}
+              </button>
+            </div>
+            <div className="mt-2.5 flex items-end gap-4 border-t border-line pt-2.5">
+              <div>
+                <p className="text-[10px] uppercase text-fg-subtle">Cap Years</p>
+                {editing === owner.id ? (
+                  <input
+                    type="number"
+                    value={years}
+                    onChange={(e) => setYears(parseInt(e.target.value) || 0)}
+                    className="mt-0.5 w-16 rounded border border-line bg-elevated px-2 py-1 text-center text-[14px] text-fg focus:border-accent focus:outline-none"
+                  />
+                ) : (
+                  <p className="text-[15px] font-semibold text-fg">{owner.availableYears}</p>
+                )}
+              </div>
+              <div>
+                <p className="text-[10px] uppercase text-fg-subtle">Negotiations</p>
+                {editing === owner.id ? (
+                  <input
+                    type="number"
+                    value={negotiations}
+                    onChange={(e) => setNegotiations(parseInt(e.target.value) || 0)}
+                    className="mt-0.5 w-16 rounded border border-line bg-elevated px-2 py-1 text-center text-[14px] text-fg focus:border-accent focus:outline-none"
+                  />
+                ) : (
+                  <p className="text-[15px] font-semibold text-fg">{owner.availableNegotiations}</p>
+                )}
+              </div>
+              <div>
+                <p className="text-[10px] uppercase text-fg-subtle">Submitted</p>
+                <p className="text-[15px]">
+                  {owner.rosterSubmitted ? <span className="text-success">✓</span> : <span className="text-fg-subtle">—</span>}
+                </p>
+              </div>
+              <div className="ml-auto">
+                {editing === owner.id ? (
+                  <button
+                    onClick={() => saveBudget(owner.id)}
+                    disabled={busy}
+                    className="rounded-lg bg-accent px-3 py-1.5 text-[12px] font-medium text-white transition-colors hover:bg-accent-hover disabled:opacity-40"
+                  >
+                    Save
+                  </button>
+                ) : (
+                  <button
+                    onClick={() => startEdit(owner)}
+                    className="text-[12px] text-accent hover:underline"
+                  >
+                    Edit Budget
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Desktop: Table */}
+      <div className="hidden overflow-x-auto rounded-lg border border-line sm:block">
         <table className="min-w-full divide-y divide-line">
           <thead className="bg-elevated/50">
             <tr>

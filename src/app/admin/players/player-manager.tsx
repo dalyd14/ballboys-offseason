@@ -90,7 +90,109 @@ export function PlayerManager({
         />
       </div>
 
-      <div className="max-h-[60vh] overflow-auto rounded-lg border border-line">
+      {/* Mobile: Card list */}
+      <div className="max-h-[60vh] space-y-2.5 overflow-auto sm:hidden">
+        {filtered.map((p) => (
+          <div key={p.id} className="rounded-xl border border-line bg-surface p-3">
+            <div className="flex items-center gap-3">
+              {p.imageUrl && (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={p.imageUrl}
+                  alt={p.playerName}
+                  className="h-11 w-11 shrink-0 rounded-lg object-cover"
+                />
+              )}
+              <div className="min-w-0 flex-1">
+                <Link href={`/admin/players/${p.id}`} className="hover:underline">
+                  <p className="truncate text-[14px] font-medium text-fg">{p.playerName}</p>
+                </Link>
+                <p className="text-[12px] text-fg-subtle">{p.nflTeam} · {p.position} · {p.ownerName}</p>
+              </div>
+              <div className="flex shrink-0 items-center gap-3 text-right">
+                <div>
+                  <p className="text-[10px] uppercase text-fg-subtle">Contract</p>
+                  {editing === p.id ? (
+                    <input
+                      type="number"
+                      value={years === "none" ? "" : years}
+                      onChange={(e) => {
+                        const v = e.target.value;
+                        setYears(v === "" ? "none" : parseInt(v));
+                      }}
+                      placeholder="none"
+                      className="w-16 rounded border border-line bg-elevated px-2 py-1 text-center text-[14px] text-fg focus:border-accent focus:outline-none"
+                    />
+                  ) : p.contractYears == null ? (
+                    <span className="text-fg-subtle">none</span>
+                  ) : (
+                    <span className="font-semibold text-fg">{p.contractYears}</span>
+                  )}
+                </div>
+                <div>
+                  <p className="text-[10px] uppercase text-fg-subtle">Draft</p>
+                  <p className="text-center">
+                    {p.toDraft ? <span className="text-danger">✕</span> : <span className="text-fg-subtle">—</span>}
+                  </p>
+                </div>
+              </div>
+            </div>
+            <div className="mt-2.5 flex items-center justify-between border-t border-line pt-2.5">
+              <div className="flex items-center gap-2">
+                <span className="text-[12px] text-fg-subtle">Neg:</span>
+                {editing === p.id ? (
+                  <input
+                    type="checkbox"
+                    checked={negotiation}
+                    onChange={(e) => setNegotiation(e.target.checked)}
+                    className="h-4 w-4 accent-accent"
+                  />
+                ) : p.negotiationAvailable ? (
+                  <span className="text-success">✓</span>
+                ) : (
+                  <span className="text-fg-subtle">—</span>
+                )}
+              </div>
+              <div className="flex items-center gap-3">
+                {editing === p.id ? (
+                  <button
+                    onClick={() => save(p.id)}
+                    disabled={busy}
+                    className="rounded-lg bg-accent px-3 py-1.5 text-[12px] font-medium text-white transition-colors hover:bg-accent-hover disabled:opacity-40"
+                  >
+                    Save
+                  </button>
+                ) : (
+                  <>
+                    <Link
+                      href={`/admin/players/${p.id}`}
+                      className="flex items-center gap-1 text-[12px] text-fg-muted hover:text-fg"
+                      title="Transaction history"
+                    >
+                      <HistoryIcon className="h-3.5 w-3.5" />
+                    </Link>
+                    <button
+                      onClick={() => startEdit(p)}
+                      className="flex items-center gap-1 text-[12px] text-accent hover:underline"
+                    >
+                      <EditIcon className="h-3.5 w-3.5" />
+                      Edit
+                    </button>
+                  </>
+                )}
+              </div>
+            </div>
+          </div>
+        ))}
+        {filtered.length === 0 && (
+          <div className="rounded-xl border border-line bg-surface p-8 text-center text-[13px] text-fg-muted">
+            No players found.
+          </div>
+        )}
+      </div>
+
+      {/* Desktop: Table */}
+      <div className="hidden max-h-[60vh] overflow-auto rounded-lg border border-line sm:block">
         <table className="min-w-full divide-y divide-line">
           <thead className="bg-elevated/50 sticky top-0">
             <tr>
