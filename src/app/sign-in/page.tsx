@@ -28,7 +28,7 @@ export default function SignInPage() {
   };
 
   return (
-    <div className="flex min-h-[calc(100vh-3rem)] flex-col items-center justify-center px-6">
+    <div className="flex min-h-[calc(100vh-3rem)] flex-col items-center justify-center px-4 sm:px-6">
       <div className="w-full max-w-sm">
         <div className="mb-8 text-center">
           <div className="mb-3 text-3xl">🏈</div>

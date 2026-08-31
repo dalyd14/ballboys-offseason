@@ -10,6 +10,7 @@ import {
   validateRoster,
 } from "@/lib/offseason";
 import { submitRosterAction } from "@/app/submit-roster/actions";
+import { CustomSelect } from "@/components/custom-select";
 
 interface RosterSubmitTableProps {
   players: Player[];
@@ -154,7 +155,7 @@ export function RosterSubmitTable({
 
   if (success) {
     return (
-      <div className="mx-auto max-w-lg py-20 text-center">
+      <div className="mx-auto max-w-lg px-4 py-20 text-center">
         <div className="rounded-xl border border-success/20 bg-success/5 p-8">
           <h2 className="text-xl font-semibold text-success">You are all set!</h2>
           <p className="mt-2 text-[14px] text-success/80">
@@ -168,6 +169,7 @@ export function RosterSubmitTable({
   const thClass = "px-3 py-3 text-left text-[11px] font-medium uppercase tracking-wider text-fg-subtle";
   const tdClass = "px-3 py-3";
   const selectClass = "w-full rounded-lg border border-line bg-elevated px-2 py-1.5 text-[13px] text-fg focus:border-accent focus:outline-none";
+  const mobileSelectClass = "rounded-lg border border-line bg-elevated px-3 py-2 text-[14px] text-fg focus:border-accent focus:outline-none";
 
   return (
     <div>
@@ -178,13 +180,14 @@ export function RosterSubmitTable({
         </div>
       )}
 
-      {/* Cap & Negotiations Counter */}
-      <div className="mb-6 flex flex-wrap items-center gap-6 rounded-xl border border-line bg-surface p-5">
-        <div>
-          <h2 className="text-2xl font-semibold text-fg">
-            {yearsRemaining} <span className="text-[16px] font-normal text-fg-muted">Years Left</span>
-          </h2>
-          <div className="mt-2 h-1.5 w-48 overflow-hidden rounded-full bg-elevated">
+      {/* Mobile: sticky compact counter */}
+      <div className="sticky top-12 z-40 -mx-4 mb-4 border-b border-line bg-surface/90 px-4 py-3 backdrop-blur-md sm:hidden">
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex items-baseline gap-1">
+            <span className="text-xl font-semibold text-fg">{yearsRemaining}</span>
+            <span className="text-[12px] text-fg-muted">Years</span>
+          </div>
+          <div className="mx-2 h-1.5 flex-1 overflow-hidden rounded-full bg-elevated">
             <div
               className={`h-full rounded-full transition-all ${
                 capPercent < 30
@@ -196,31 +199,207 @@ export function RosterSubmitTable({
               style={{ width: `${Math.max(0, capPercent)}%` }}
             />
           </div>
-        </div>
-        <div>
-          <h2 className="text-2xl font-semibold text-fg">
-            {negotiationsRemaining} <span className="text-[16px] font-normal text-fg-muted">Negotiation{negotiationsRemaining === 1 ? "" : "s"} Left</span>
-          </h2>
-        </div>
-        <div className="ml-auto flex gap-2">
-          <button
-            onClick={handleSubmit}
-            disabled={submitting}
-            className="rounded-lg bg-accent px-6 py-2 text-[13px] font-medium text-white transition-colors hover:bg-accent-hover disabled:opacity-40"
-          >
-            {submitting ? "Submitting..." : "Submit"}
-          </button>
-          <button
-            onClick={handleReset}
-            className="rounded-lg border border-danger/20 bg-danger/5 px-4 py-2 text-[13px] font-medium text-danger transition-colors hover:bg-danger/10"
-          >
-            Reset
-          </button>
+          <div className="flex items-baseline gap-1">
+            <span className="text-xl font-semibold text-fg">{negotiationsRemaining}</span>
+            <span className="text-[12px] text-fg-muted">Neg{negotiationsRemaining === 1 ? "" : "s"}</span>
+          </div>
+          <div className="flex gap-2">
+            <button
+              onClick={handleSubmit}
+              disabled={submitting}
+              className="rounded-lg bg-accent px-4 py-1.5 text-[13px] font-medium text-white transition-colors hover:bg-accent-hover disabled:opacity-40"
+            >
+              {submitting ? "Submitting..." : "Submit"}
+            </button>
+            <button
+              onClick={handleReset}
+              className="rounded-lg border border-danger/20 bg-danger/5 px-3 py-1.5 text-[13px] font-medium text-danger transition-colors hover:bg-danger/10"
+            >
+              Reset
+            </button>
+          </div>
         </div>
       </div>
 
-      {/* Roster Table */}
-      <div className="overflow-x-auto rounded-xl border border-line bg-surface">
+      {/* Desktop: normal counter */}
+      <div className="mb-6 hidden rounded-xl border border-line bg-surface p-5 sm:block">
+        <div className="hidden flex-wrap items-center gap-6 sm:flex">
+          <div>
+            <h2 className="text-2xl font-semibold text-fg">
+              {yearsRemaining} <span className="text-[16px] font-normal text-fg-muted">Years Left</span>
+            </h2>
+            <div className="mt-2 h-1.5 w-48 overflow-hidden rounded-full bg-elevated">
+              <div
+                className={`h-full rounded-full transition-all ${
+                  capPercent < 30
+                    ? "bg-danger"
+                    : capPercent < 60
+                      ? "bg-warning"
+                      : "bg-success"
+                }`}
+                style={{ width: `${Math.max(0, capPercent)}%` }}
+              />
+            </div>
+          </div>
+          <div>
+            <h2 className="text-2xl font-semibold text-fg">
+              {negotiationsRemaining} <span className="text-[16px] font-normal text-fg-muted">Negotiation{negotiationsRemaining === 1 ? "" : "s"} Left</span>
+            </h2>
+          </div>
+          <div className="ml-auto flex gap-2">
+            <button
+              onClick={handleSubmit}
+              disabled={submitting}
+              className="rounded-lg bg-accent px-6 py-2 text-[13px] font-medium text-white transition-colors hover:bg-accent-hover disabled:opacity-40"
+            >
+              {submitting ? "Submitting..." : "Submit"}
+            </button>
+            <button
+              onClick={handleReset}
+              className="rounded-lg border border-danger/20 bg-danger/5 px-4 py-2 text-[13px] font-medium text-danger transition-colors hover:bg-danger/10"
+            >
+              Reset
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Mobile: Card list */}
+      <div className="space-y-3 sm:hidden">
+        {initialPlayers.map((player) => {
+          const move = moves.get(player.id);
+          const action = move?.action ?? "nothing";
+          const years = move?.years ?? "nothing";
+          const availableActions = getAvailableActions(player, negotiationsRemaining);
+          const yearOptions = getYearOptions(
+            player,
+            action,
+            availableYears,
+            initialPlayers,
+            moves,
+          );
+          const result = computeMove(player, action, years, 999);
+          const finalContract =
+            result.newContract == null
+              ? player.contractYears ?? ""
+              : result.newContract === 0
+                ? ""
+                : result.newContract;
+
+          if (player.toDraft) {
+            return (
+              <div key={player.id} className="rounded-xl border border-danger/20 bg-danger/5 p-3">
+                <div className="flex items-center gap-3">
+                  {player.imageUrl && (
+                    <Image
+                      src={player.imageUrl}
+                      alt={player.playerName}
+                      width={44}
+                      height={44}
+                      className="rounded-lg opacity-60"
+                      unoptimized
+                    />
+                  )}
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-[14px] font-medium text-fg-muted">{player.playerName}</p>
+                    <p className="text-[12px] text-fg-subtle">{player.nflTeam} · {player.position}</p>
+                  </div>
+                  <span className="shrink-0 rounded-full border border-danger/30 bg-danger/10 px-3 py-1 text-[12px] font-medium text-danger">
+                    Going to Draft
+                  </span>
+                </div>
+              </div>
+            );
+          }
+
+          return (
+            <div key={player.id} className="rounded-xl border border-line bg-surface p-3">
+              <div className="flex items-center gap-3">
+                {player.imageUrl && (
+                  <Image
+                    src={player.imageUrl}
+                    alt={player.playerName}
+                    width={44}
+                    height={44}
+                    className="rounded-lg"
+                    unoptimized
+                  />
+                )}
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-[14px] font-medium text-fg">{player.playerName}</p>
+                  <p className="text-[12px] text-fg-subtle">{player.nflTeam} · {player.position}</p>
+                </div>
+                <div className="flex shrink-0 items-start gap-3 text-center">
+                  <div className="w-12">
+                    <p className="text-[10px] uppercase text-fg-subtle">Contract</p>
+                    <p className="text-lg font-bold text-fg">
+                      {player.contractYears == null ? "" : player.contractYears}
+                    </p>
+                  </div>
+                  <div className="w-12">
+                    <p className="text-[10px] uppercase text-fg-subtle">Final</p>
+                    <p className="text-lg font-bold text-fg">{finalContract}</p>
+                  </div>
+                  <div className="w-8">
+                    <p className="text-[10px] uppercase text-fg-subtle">Neg</p>
+                    <p className="text-lg">
+                      {player.negotiationAvailable ? (
+                        <span className="text-success">✓</span>
+                      ) : (
+                        <span className="text-fg-subtle">—</span>
+                      )}
+                    </p>
+                  </div>
+                </div>
+              </div>
+              <div className="mt-2.5 flex gap-2">
+                <CustomSelect
+                  value={action}
+                  options={availableActions.map((a) => ({
+                    value: a,
+                    label:
+                      a === "sign"
+                        ? "Sign"
+                        : a === "renegotiate"
+                          ? "Renegotiate"
+                          : a === "cut"
+                            ? "Cut"
+                            : "Do Nothing",
+                  }))}
+                  onChange={(val) =>
+                    handleActionChange(player.id, val as PlayerAction)
+                  }
+                  className="flex-1"
+                />
+                {action !== "nothing" && action !== "cut" ? (
+                  <CustomSelect
+                    value={years === "nothing" ? "" : String(years)}
+                    options={[
+                      { value: "", label: "Years" },
+                      ...yearOptions.map((y) => ({
+                        value: String(y),
+                        label: y > 0 ? `+${y}` : String(y),
+                      })),
+                    ]}
+                    onChange={(val) =>
+                      handleYearChange(
+                        player.id,
+                        val === "" ? "nothing" : parseInt(val),
+                      )
+                    }
+                    className="w-20 shrink-0"
+                  />
+                ) : (
+                  <div className="w-20 shrink-0" />
+                )}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Desktop: Roster Table */}
+      <div className="hidden overflow-x-auto rounded-xl border border-line bg-surface sm:block">
         <table className="min-w-full divide-y divide-line">
           <thead className="bg-elevated/50">
             <tr>
