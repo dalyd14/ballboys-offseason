@@ -198,16 +198,7 @@ function DraftView({
                 <span className="text-fg-subtle">Owner: </span>
                 <span className="font-medium text-fg-muted">{player.ownerName}</span>
               </div>
-              <div className="flex items-center gap-3">
-                <div>
-                  <span className="text-fg-subtle">Contract: </span>
-                  <span className="font-bold text-fg">{player.contractYears == null ? "" : player.contractYears}</span>
-                </div>
-                <div>
-                  <span className="text-fg-subtle">Neg: </span>
-                  {player.negotiationAvailable ? <span className="text-success">✓</span> : <span className="text-fg-subtle">—</span>}
-                </div>
-              </div>
+              <span className="shrink-0 text-[12px] font-medium text-danger">Expired</span>
             </div>
           </div>
         ))}
@@ -228,8 +219,7 @@ function DraftView({
               <th className={thClass}>NFL Team</th>
               <th className={thClass}>Position</th>
               <th className={`${thClass} text-center`}>Owner</th>
-              <th className={`${thClass} text-center`}>Contract</th>
-              <th className={`${thClass} text-center`}>Negotiation?</th>
+              <th className={`${thClass} text-center`}>Status</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-line">
@@ -251,21 +241,14 @@ function DraftView({
                 <td className={`${tdClass} text-center text-[13px] font-medium text-fg-muted`}>
                   {player.ownerName}
                 </td>
-                <td className={`${tdClass} text-center text-[13px] font-bold text-fg`}>
-                  {player.contractYears == null ? "" : player.contractYears}
-                </td>
                 <td className={`${tdClass} text-center`}>
-                  {player.negotiationAvailable ? (
-                    <span className="text-success">✓</span>
-                  ) : (
-                    <span className="text-fg-subtle">—</span>
-                  )}
+                  <span className="text-[12px] font-medium text-danger">Expired</span>
                 </td>
               </tr>
             ))}
             {draftList.length === 0 && (
               <tr>
-                <td colSpan={7} className="px-4 py-8 text-center text-[14px] text-fg-muted">
+                <td colSpan={6} className="px-4 py-8 text-center text-[14px] text-fg-muted">
                   No players in the draft pool yet.
                 </td>
               </tr>
